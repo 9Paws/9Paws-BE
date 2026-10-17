@@ -67,6 +67,20 @@ class EmailServiceTest {
     }
 
     @Test
+    @DisplayName("Should sanitize HTML characters in fullName to prevent XSS")
+    void sendRegistrationOtp_sanitizesHtmlInFullName() throws Exception {
+      MimeMessage mimeMessage = new MimeMessage((Session) null);
+      when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+
+      emailService.sendRegistrationOtp("user@example.com", "<script>alert('xss')</script>", "123456");
+
+      verify(mailSender).send(mimeMessage);
+      String content = extractBodyContent(mimeMessage);
+      assertThat(content).doesNotContain("<script>");
+      assertThat(content).contains("&lt;script&gt;");
+    }
+
+    @Test
     @DisplayName("Should throw AppException when mailSender throws exception on registration OTP")
     void sendRegistrationOtp_whenMailException_throwsAppException() {
       MimeMessage mimeMessage = new MimeMessage((Session) null);

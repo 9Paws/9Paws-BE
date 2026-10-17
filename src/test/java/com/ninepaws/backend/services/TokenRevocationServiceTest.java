@@ -55,6 +55,7 @@ class TokenRevocationServiceTest {
 
         verify(valueOperations).set(eq("9paws:refresh_token:" + userId + ":jti-1"), eq("token-value"), eq(Duration.ofSeconds(604800L)));
         verify(setOperations).add(eq("9paws:user_sessions:" + userId), eq("jti-1"));
+        verify(redisTemplate).expire(eq("9paws:user_sessions:" + userId), eq(Duration.ofSeconds(604800L)));
     }
 
     @Test

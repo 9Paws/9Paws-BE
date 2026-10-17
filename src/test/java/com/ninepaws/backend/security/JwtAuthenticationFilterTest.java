@@ -289,7 +289,7 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    @DisplayName("corsConfigurationSource configures open CORS for API clients")
+    @DisplayName("corsConfigurationSource configures CORS with allowed origin patterns")
     void corsConfigurationSource_returnsValidConfig() {
       CorsConfigurationSource source = securityConfig.corsConfigurationSource();
       MockHttpServletRequest request = new MockHttpServletRequest();
@@ -298,9 +298,21 @@ class JwtAuthenticationFilterTest {
 
       assertThat(config).isNotNull();
       assertThat(config.getAllowCredentials()).isTrue();
-      assertThat(config.getAllowedOriginPatterns()).contains("*");
+      assertThat(config.getAllowedOriginPatterns()).contains("http://localhost:*", "http://127.0.0.1:*");
       assertThat(config.getAllowedMethods())
           .contains("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
+    }
+
+    @Test
+    @DisplayName("corsConfigurationSource parses and trims comma-separated allowed origin patterns")
+    void corsConfigurationSource_parsesAndTrimsCustomOrigins() {
+      SecurityConfig customConfig = new SecurityConfig(jwtAuthenticationFilter, " https://ninepaws.com , https://app.ninepaws.com ");
+      CorsConfigurationSource source = customConfig.corsConfigurationSource();
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      CorsConfiguration config = source.getCorsConfiguration(request);
+
+      assertThat(config).isNotNull();
+      assertThat(config.getAllowedOriginPatterns()).containsExactly("https://ninepaws.com", "https://app.ninepaws.com");
     }
   }
 }

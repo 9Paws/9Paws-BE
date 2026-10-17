@@ -27,6 +27,7 @@ public class TokenRevocationServiceImpl implements TokenRevocationService {
 
         String sessionKey = RedisKeyConstants.userSessionsKey(userId);
         redisTemplate.opsForSet().add(sessionKey, jti);
+        redisTemplate.expire(sessionKey, Duration.ofSeconds(ttlSeconds));
         log.debug("Recorded refresh token with jti: {} for user: {}", jti, userId);
     }
 

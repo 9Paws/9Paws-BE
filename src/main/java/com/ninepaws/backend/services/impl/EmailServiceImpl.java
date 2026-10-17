@@ -12,6 +12,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import java.io.UnsupportedEncodingException;
 
@@ -74,8 +75,8 @@ public class EmailServiceImpl implements EmailService {
   }
 
   private String buildOtpHtmlContent(String fullName, String title, String messageBody, String otp) {
-    String greetingName = (fullName != null && !fullName.isBlank()) ? fullName : "Quý khách";
-
+    String rawGreetingName = (fullName != null && !fullName.isBlank()) ? fullName : "Quý khách";
+    String greetingName = HtmlUtils.htmlEscape(rawGreetingName);
     return """
         <!DOCTYPE html>
         <html lang="vi">

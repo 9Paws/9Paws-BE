@@ -179,9 +179,11 @@ public class AuthServiceImpl implements AuthService {
               ? accessToken.substring(BEARER_PREFIX.length())
               : accessToken;
       try {
-        long remainingMs = jwtService.getRemainingExpirationMs(cleanToken);
         TokenPayload accessPayload = jwtService.parseAndValidateToken(cleanToken);
         if (accessPayload != null && accessPayload.jti() != null) {
+          long remainingMs = accessPayload.expiresAt() != null
+              ? Math.max(0L, accessPayload.expiresAt().toEpochMilli() - System.currentTimeMillis())
+              : 0L;
           tokenRevocationService.blacklistAccessToken(accessPayload.jti(), remainingMs);
         }
       } catch (Exception e) {
@@ -214,9 +216,11 @@ public class AuthServiceImpl implements AuthService {
               ? accessToken.substring(BEARER_PREFIX.length())
               : accessToken;
       try {
-        long remainingMs = jwtService.getRemainingExpirationMs(cleanToken);
         TokenPayload accessPayload = jwtService.parseAndValidateToken(cleanToken);
         if (accessPayload != null && accessPayload.jti() != null) {
+          long remainingMs = accessPayload.expiresAt() != null
+              ? Math.max(0L, accessPayload.expiresAt().toEpochMilli() - System.currentTimeMillis())
+              : 0L;
           tokenRevocationService.blacklistAccessToken(accessPayload.jti(), remainingMs);
         }
       } catch (Exception e) {

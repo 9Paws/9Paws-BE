@@ -353,14 +353,12 @@ class AuthServiceTest {
       UUID userId = UUID.randomUUID();
       TokenPayload accessPayload = new TokenPayload(userId, testEmail, "access-jti", "ACCESS", Instant.now(), Instant.now().plusSeconds(900));
       TokenPayload refreshPayload = new TokenPayload(userId, testEmail, "refresh-jti", "REFRESH", Instant.now(), Instant.now().plusSeconds(604800));
-
-      when(jwtService.getRemainingExpirationMs("access-token")).thenReturn(900_000L);
       when(jwtService.parseAndValidateToken("access-token")).thenReturn(accessPayload);
       when(jwtService.parseAndValidateToken("refresh-token")).thenReturn(refreshPayload);
 
       authService.logout("access-token", "refresh-token");
 
-      verify(tokenRevocationService).blacklistAccessToken("access-jti", 900_000L);
+      verify(tokenRevocationService).blacklistAccessToken(eq("access-jti"), anyLong());
       verify(tokenRevocationService).revokeRefreshToken(userId, "refresh-jti");
     }
 
@@ -370,12 +368,11 @@ class AuthServiceTest {
       UUID userId = UUID.randomUUID();
       TokenPayload accessPayload = new TokenPayload(userId, testEmail, "access-jti", "ACCESS", Instant.now(), Instant.now().plusSeconds(900));
 
-      when(jwtService.getRemainingExpirationMs("clean-access-token")).thenReturn(900_000L);
       when(jwtService.parseAndValidateToken("clean-access-token")).thenReturn(accessPayload);
 
       authService.logout("Bearer clean-access-token", null);
 
-      verify(tokenRevocationService).blacklistAccessToken("access-jti", 900_000L);
+      verify(tokenRevocationService).blacklistAccessToken(eq("access-jti"), anyLong());
     }
 
     @Test
@@ -397,12 +394,11 @@ class AuthServiceTest {
       UUID userId = UUID.randomUUID();
       TokenPayload accessPayload = new TokenPayload(userId, testEmail, "access-jti", "ACCESS", Instant.now(), Instant.now().plusSeconds(900));
 
-      when(jwtService.getRemainingExpirationMs("access-token")).thenReturn(900_000L);
       when(jwtService.parseAndValidateToken("access-token")).thenReturn(accessPayload);
 
       authService.logoutAll(userId, "Bearer access-token");
 
-      verify(tokenRevocationService).blacklistAccessToken("access-jti", 900_000L);
+      verify(tokenRevocationService).blacklistAccessToken(eq("access-jti"), anyLong());
       verify(tokenRevocationService).revokeAllUserSessions(userId);
     }
 
