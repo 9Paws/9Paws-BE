@@ -1,3 +1,121 @@
+server:
+  port: ${PORT:8080}
+
 spring:
-  application:
-    name: ninepaws-backend
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 30
+      connection-timeout: 5000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+    open-in-view: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  threads:
+    virtual:
+      enabled: true
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Ho_Chi_Minh
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: ${MAX_FILE_SIZE:10MB}
+      max-request-size: ${MAX_REQUEST_SIZE:50MB}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    connect-retries: 30
+    connect-retries-interval: 5
+
+  ai:
+    googlegenai:
+      api-key: ${SPRING_AI_GOOGLE_GENAI_API_KEY}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: ${JWT_ACCESS_EXPIRATION}
+    refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}
+
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+
+  otp:
+    length: ${OTP_LENGTH:6}
+    ttl-minutes: ${OTP_TTL_MINUTES:5}
+    max-attempts: ${MAX_ATTEMPTS:3}
+    resend-cooldown-seconds: ${RESEND_COOLDOWN_SECONDS:60}
+    reset-max-per-hour: ${RESET_MAX_PER_HOUR:3}
+
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
+    default-avatar-url: ${CLOUDINARY_DEFAULT_AVATAR_URL}
+    allowed-image-types: ${CLOUDINARY_ALLOWED_IMAGE_TYPES:image/jpeg,image/png,image/webp,image/jpg}
+    allowed-video-types: ${CLOUDINARY_ALLOWED_VIDEO_TYPES:video/mp4,video/webm}
+    avatar-size: ${CLOUDINARY_AVATAR_SIZE:5242880}
+    thumbnail-size: ${CLOUDINARY_THUMBNAIL_SIZE:1048576}
+
+  thread:
+    core-thread-pool-size: ${CORE_THREAD_POOL_SIZE:10}
+    max-thread-pool-size: ${MAX_THREAD_POOL_SIZE:200}
+    thread-queue-capacity: ${THREAD_QUEUE_CAPACITY:500}
+
+  scalar:
+    enabled: false
+
+  backend:
+    ip: ${BACKEND_IP:127.0.0.1}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    root: WARN
+    com.ninepaws.backend: INFO
+    org.flywaydb: INFO
+    org.hibernate.SQL: WARN

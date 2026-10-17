@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: ninepaws-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  web:
+    resources:
+      add-mappings: true
+      static-locations: classpath:/static/
+  config:
+    import: optional:file:.env[.properties]
+
+server:
+  address: 0.0.0.0
+
+app:
+  firebase:
+    config-json: ${FIREBASE_CONFIG_JSON:}
+    config-path: ${FIREBASE_CONFIG_PATH:}
+    app-name: ${FIREBASE_APP_NAME:ninepaws-backend}
