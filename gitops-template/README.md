@@ -11,7 +11,7 @@ Repository lưu trữ cấu hình triển khai hạ tầng và dịch vụ cho d
   - `init-ssl.sh`: Script hỗ trợ xin cấp chứng chỉ SSL Let's Encrypt lần đầu tiên.
 - `systemd/`: File service và timer của Linux OS quản lý chu kỳ kiểm tra tự động.
 - `.env.example`: File mẫu liệt kê danh sách các biến môi trường cần thiết.
-- `docs/`: Hướng dẫn cài đặt VPS và quy trình hoàn tác (Rollback).
+- `guides/`: Hướng dẫn cài đặt VPS và quy trình hoàn tác (Rollback).
 
 ## Cơ chế vận hành
 
