@@ -1,4 +1,4 @@
-.PHONY: up down logs build run format clean
+.PHONY: up down logs build run format clean clean-seed db-clean db-reset
 
 # Khởi động PostgreSQL và Redis
 up:
@@ -27,3 +27,8 @@ run:
 # Xóa target folder
 clean:
 	./mvnw clean
+
+# Reset toàn bộ database và Redis (xóa volume và khởi động lại container mới tinh)
+db-reset:
+	docker-compose -f docker/docker-compose.yml --env-file .env down -v
+	docker-compose -f docker/docker-compose.yml --env-file .env up -d
