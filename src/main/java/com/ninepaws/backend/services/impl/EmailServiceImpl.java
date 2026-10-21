@@ -4,6 +4,7 @@ import com.ninepaws.backend.exceptions.AppException;
 import com.ninepaws.backend.services.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,8 +14,6 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
-
-import java.io.UnsupportedEncodingException;
 
 @Slf4j
 @Service
@@ -32,7 +31,8 @@ public class EmailServiceImpl implements EmailService {
     log.info("Sending registration OTP email to recipient: {}", toEmail);
     String subject = "NinePaws - Đăng ký tài khoản NinePaws";
     String title = "Xác thực đăng ký tài khoản";
-    String messageBody = "Cảm ơn bạn đã lựa chọn NinePaws. Dưới đây là mã xác thực OTP dùng để hoàn tất đăng ký tài khoản của bạn:";
+    String messageBody =
+        "Cảm ơn bạn đã lựa chọn NinePaws. Dưới đây là mã xác thực OTP dùng để hoàn tất đăng ký tài khoản của bạn:";
 
     String htmlContent = buildOtpHtmlContent(fullName, title, messageBody, otp);
     sendHtmlEmail(toEmail, subject, htmlContent);
@@ -44,7 +44,8 @@ public class EmailServiceImpl implements EmailService {
     log.info("Sending forgot password OTP email to recipient: {}", toEmail);
     String subject = "NinePaws - Đặt lại mật khẩu NinePaws";
     String title = "Yêu cầu đặt lại mật khẩu";
-    String messageBody = "Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản NinePaws của bạn. Dưới đây là mã xác thực OTP:";
+    String messageBody =
+        "Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản NinePaws của bạn. Dưới đây là mã xác thực OTP:";
 
     String htmlContent = buildOtpHtmlContent(fullName, title, messageBody, otp);
     sendHtmlEmail(toEmail, subject, htmlContent);
@@ -70,11 +71,15 @@ public class EmailServiceImpl implements EmailService {
       log.info("Successfully sent email to recipient: {}", toEmail);
     } catch (MessagingException | RuntimeException e) {
       log.error("Failed to send email to recipient: {}", toEmail, e);
-      throw new AppException("Không thể gửi email xác thực. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR, e);
+      throw new AppException(
+          "Không thể gửi email xác thực. Vui lòng thử lại sau.",
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          e);
     }
   }
 
-  private String buildOtpHtmlContent(String fullName, String title, String messageBody, String otp) {
+  private String buildOtpHtmlContent(
+      String fullName, String title, String messageBody, String otp) {
     String rawGreetingName = (fullName != null && !fullName.isBlank()) ? fullName : "Quý khách";
     String greetingName = HtmlUtils.htmlEscape(rawGreetingName);
     return """
@@ -179,6 +184,7 @@ public class EmailServiceImpl implements EmailService {
           </div>
         </body>
         </html>
-        """.formatted(title, greetingName, messageBody, otp);
+        """
+        .formatted(title, greetingName, messageBody, otp);
   }
 }

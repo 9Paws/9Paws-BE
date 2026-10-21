@@ -38,7 +38,6 @@ import com.ninepaws.backend.services.impl.AuthServiceImpl;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -137,10 +136,17 @@ class AuthServiceTest {
     @DisplayName("verifyRegistrationOtp when OTP valid updates emailVerified and issues tokens")
     void verifyRegistrationOtp_whenOtpValid_verifiesUserAndIssuesTokens() {
       UUID userId = UUID.randomUUID();
-      User user = User.builder().id(userId).email(testEmail).fullName("Nguyen Van A").emailVerified(false).build();
+      User user =
+          User.builder()
+              .id(userId)
+              .email(testEmail)
+              .fullName("Nguyen Van A")
+              .emailVerified(false)
+              .build();
       when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(user));
       when(otpService.verifyOtp(testEmail, OtpType.REGISTER, "123456")).thenReturn(true);
-      when(jwtService.generateAccessToken(eq(userId), eq(testEmail), anyString())).thenReturn("access-token");
+      when(jwtService.generateAccessToken(eq(userId), eq(testEmail), anyString()))
+          .thenReturn("access-token");
       when(jwtService.generateRefreshToken(eq(userId), anyString())).thenReturn("refresh-token");
       when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(1800L);
       when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(604800L);
@@ -150,7 +156,8 @@ class AuthServiceTest {
 
       assertThat(user.isEmailVerified()).isTrue();
       verify(userRepository).save(user);
-      verify(tokenRevocationService).recordRefreshToken(eq(userId), anyString(), eq("refresh-token"), eq(604800L));
+      verify(tokenRevocationService)
+          .recordRefreshToken(eq(userId), anyString(), eq("refresh-token"), eq(604800L));
       assertThat(response.accessToken()).isEqualTo("access-token");
       assertThat(response.refreshToken()).isEqualTo("refresh-token");
       assertThat(response.tokenType()).isEqualTo("Bearer");
@@ -180,7 +187,8 @@ class AuthServiceTest {
       User user = User.builder().email(testEmail).fullName("User").build();
       when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(user));
       doThrow(new RateLimitException("OTP cooldown active"))
-          .when(otpService).checkCooldown(testEmail, OtpType.REGISTER);
+          .when(otpService)
+          .checkCooldown(testEmail, OtpType.REGISTER);
 
       ResendOtpRequest request = new ResendOtpRequest(testEmail, OtpType.REGISTER);
       assertThatThrownBy(() -> authService.resendOtp(request))
@@ -262,10 +270,18 @@ class AuthServiceTest {
     @DisplayName("login when credentials valid and email verified returns AuthResponse")
     void login_whenCredentialsValidAndVerified_returnsAuthResponse() {
       UUID userId = UUID.randomUUID();
-      User user = User.builder().id(userId).email(testEmail).fullName("Nguyen Van A").passwordHash("hash").emailVerified(true).build();
+      User user =
+          User.builder()
+              .id(userId)
+              .email(testEmail)
+              .fullName("Nguyen Van A")
+              .passwordHash("hash")
+              .emailVerified(true)
+              .build();
       when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(user));
       when(passwordEncoder.matches(testPassword, "hash")).thenReturn(true);
-      when(jwtService.generateAccessToken(eq(userId), eq(testEmail), anyString())).thenReturn("login-access");
+      when(jwtService.generateAccessToken(eq(userId), eq(testEmail), anyString()))
+          .thenReturn("login-access");
       when(jwtService.generateRefreshToken(eq(userId), anyString())).thenReturn("login-refresh");
       when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(1800L);
       when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(604800L);
@@ -276,7 +292,8 @@ class AuthServiceTest {
       assertThat(response.accessToken()).isEqualTo("login-access");
       assertThat(response.refreshToken()).isEqualTo("login-refresh");
       assertThat(response.user().email()).isEqualTo(testEmail);
-      verify(tokenRevocationService).recordRefreshToken(eq(userId), anyString(), eq("login-refresh"), eq(604800L));
+      verify(tokenRevocationService)
+          .recordRefreshToken(eq(userId), anyString(), eq("login-refresh"), eq(604800L));
     }
   }
 
@@ -288,12 +305,21 @@ class AuthServiceTest {
     @DisplayName("refreshToken when token valid rotates and issues new tokens")
     void refreshToken_whenTokenValid_rotatesAndIssuesNewTokens() {
       UUID userId = UUID.randomUUID();
-      TokenPayload oldPayload = new TokenPayload(userId, testEmail, "jti-old", "REFRESH", Instant.now(), Instant.now().plusSeconds(604800));
+      TokenPayload oldPayload =
+          new TokenPayload(
+              userId,
+              testEmail,
+              "jti-old",
+              "REFRESH",
+              Instant.now(),
+              Instant.now().plusSeconds(604800));
       when(jwtService.parseAndValidateToken("old-refresh-token")).thenReturn(oldPayload);
       when(tokenRevocationService.isRefreshTokenValid(userId, "jti-old")).thenReturn(true);
-      when(userRepository.findById(userId)).thenReturn(Optional.of(User.builder().email(testEmail).fullName("Test").build()));
+      when(userRepository.findById(userId))
+          .thenReturn(Optional.of(User.builder().email(testEmail).fullName("Test").build()));
 
-      when(jwtService.generateAccessToken(eq(userId), eq(testEmail), anyString())).thenReturn("new-access");
+      when(jwtService.generateAccessToken(eq(userId), eq(testEmail), anyString()))
+          .thenReturn("new-access");
       when(jwtService.generateRefreshToken(eq(userId), anyString())).thenReturn("new-refresh");
 
       AuthResponse res = authService.refreshToken(new RefreshTokenRequest("old-refresh-token"));
@@ -301,26 +327,38 @@ class AuthServiceTest {
       assertThat(res.accessToken()).isEqualTo("new-access");
       assertThat(res.refreshToken()).isEqualTo("new-refresh");
       verify(tokenRevocationService).revokeRefreshToken(userId, "jti-old");
-      verify(tokenRevocationService).recordRefreshToken(eq(userId), anyString(), eq("new-refresh"), anyLong());
+      verify(tokenRevocationService)
+          .recordRefreshToken(eq(userId), anyString(), eq("new-refresh"), anyLong());
     }
 
     @Test
     @DisplayName("refreshToken when token type is not REFRESH throws TokenRevokedException")
     void refreshToken_whenTokenTypeNotRefresh_throwsTokenRevokedException() {
       UUID userId = UUID.randomUUID();
-      TokenPayload accessPayload = new TokenPayload(userId, testEmail, "jti-1", "ACCESS", Instant.now(), Instant.now().plusSeconds(1800));
+      TokenPayload accessPayload =
+          new TokenPayload(
+              userId, testEmail, "jti-1", "ACCESS", Instant.now(), Instant.now().plusSeconds(1800));
       when(jwtService.parseAndValidateToken("access-token-wrong")).thenReturn(accessPayload);
 
-      assertThatThrownBy(() -> authService.refreshToken(new RefreshTokenRequest("access-token-wrong")))
+      assertThatThrownBy(
+              () -> authService.refreshToken(new RefreshTokenRequest("access-token-wrong")))
           .isInstanceOf(TokenRevokedException.class);
       verify(tokenRevocationService, never()).revokeRefreshToken(any(), any());
     }
 
     @Test
-    @DisplayName("refreshToken when refresh token is revoked or absent in Redis throws TokenRevokedException")
+    @DisplayName(
+        "refreshToken when refresh token is revoked or absent in Redis throws TokenRevokedException")
     void refreshToken_whenTokenNotValidInRedis_throwsTokenRevokedException() {
       UUID userId = UUID.randomUUID();
-      TokenPayload payload = new TokenPayload(userId, testEmail, "jti-revoked", "REFRESH", Instant.now(), Instant.now().plusSeconds(604800));
+      TokenPayload payload =
+          new TokenPayload(
+              userId,
+              testEmail,
+              "jti-revoked",
+              "REFRESH",
+              Instant.now(),
+              Instant.now().plusSeconds(604800));
       when(jwtService.parseAndValidateToken("revoked-token")).thenReturn(payload);
       when(tokenRevocationService.isRefreshTokenValid(userId, "jti-revoked")).thenReturn(false);
 
@@ -333,7 +371,14 @@ class AuthServiceTest {
     @DisplayName("refreshToken when user not found throws ResourceNotFoundException")
     void refreshToken_whenUserNotFound_throwsResourceNotFoundException() {
       UUID userId = UUID.randomUUID();
-      TokenPayload payload = new TokenPayload(userId, testEmail, "jti-valid", "REFRESH", Instant.now(), Instant.now().plusSeconds(604800));
+      TokenPayload payload =
+          new TokenPayload(
+              userId,
+              testEmail,
+              "jti-valid",
+              "REFRESH",
+              Instant.now(),
+              Instant.now().plusSeconds(604800));
       when(jwtService.parseAndValidateToken("valid-token")).thenReturn(payload);
       when(tokenRevocationService.isRefreshTokenValid(userId, "jti-valid")).thenReturn(true);
       when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -348,11 +393,26 @@ class AuthServiceTest {
   class LogoutTests {
 
     @Test
-    @DisplayName("logout when valid access and refresh tokens blacklists access and revokes refresh")
+    @DisplayName(
+        "logout when valid access and refresh tokens blacklists access and revokes refresh")
     void logout_whenValidTokens_blacklistsAccessAndRevokesRefresh() {
       UUID userId = UUID.randomUUID();
-      TokenPayload accessPayload = new TokenPayload(userId, testEmail, "access-jti", "ACCESS", Instant.now(), Instant.now().plusSeconds(900));
-      TokenPayload refreshPayload = new TokenPayload(userId, testEmail, "refresh-jti", "REFRESH", Instant.now(), Instant.now().plusSeconds(604800));
+      TokenPayload accessPayload =
+          new TokenPayload(
+              userId,
+              testEmail,
+              "access-jti",
+              "ACCESS",
+              Instant.now(),
+              Instant.now().plusSeconds(900));
+      TokenPayload refreshPayload =
+          new TokenPayload(
+              userId,
+              testEmail,
+              "refresh-jti",
+              "REFRESH",
+              Instant.now(),
+              Instant.now().plusSeconds(604800));
       when(jwtService.parseAndValidateToken("access-token")).thenReturn(accessPayload);
       when(jwtService.parseAndValidateToken("refresh-token")).thenReturn(refreshPayload);
 
@@ -366,7 +426,14 @@ class AuthServiceTest {
     @DisplayName("logout with Bearer prefix strips prefix before parsing and blacklisting")
     void logout_whenAccessTokenHasBearerPrefix_stripsPrefix() {
       UUID userId = UUID.randomUUID();
-      TokenPayload accessPayload = new TokenPayload(userId, testEmail, "access-jti", "ACCESS", Instant.now(), Instant.now().plusSeconds(900));
+      TokenPayload accessPayload =
+          new TokenPayload(
+              userId,
+              testEmail,
+              "access-jti",
+              "ACCESS",
+              Instant.now(),
+              Instant.now().plusSeconds(900));
 
       when(jwtService.parseAndValidateToken("clean-access-token")).thenReturn(accessPayload);
 
@@ -392,7 +459,14 @@ class AuthServiceTest {
     @DisplayName("logoutAll blacklists access token and revokes all user sessions")
     void logoutAll_whenValidAccessToken_blacklistsAccessAndRevokesAllSessions() {
       UUID userId = UUID.randomUUID();
-      TokenPayload accessPayload = new TokenPayload(userId, testEmail, "access-jti", "ACCESS", Instant.now(), Instant.now().plusSeconds(900));
+      TokenPayload accessPayload =
+          new TokenPayload(
+              userId,
+              testEmail,
+              "access-jti",
+              "ACCESS",
+              Instant.now(),
+              Instant.now().plusSeconds(900));
 
       when(jwtService.parseAndValidateToken("access-token")).thenReturn(accessPayload);
 
@@ -418,7 +492,8 @@ class AuthServiceTest {
   class ForgotPasswordTests {
 
     @Test
-    @DisplayName("forgotPassword when user not found returns silently without throwing or sending email")
+    @DisplayName(
+        "forgotPassword when user not found returns silently without throwing or sending email")
     void forgotPassword_whenUserNotFound_returnsSilentlyWithoutSendingEmail() {
       when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
@@ -435,7 +510,8 @@ class AuthServiceTest {
       User user = User.builder().email(testEmail).fullName("Nguyen Van A").build();
       when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(user));
       doThrow(new RateLimitException("Cooldown active"))
-          .when(otpService).checkCooldown(testEmail, OtpType.FORGOT_PASSWORD);
+          .when(otpService)
+          .checkCooldown(testEmail, OtpType.FORGOT_PASSWORD);
 
       assertThatThrownBy(() -> authService.forgotPassword(new ForgotPasswordRequest(testEmail)))
           .isInstanceOf(RateLimitException.class);
@@ -508,11 +584,13 @@ class AuthServiceTest {
     void resetPassword_updatesPasswordAndRevokesAllUserSessions() {
       User user = User.builder().email("user@example.com").fullName("Test").build();
       user.setId(UUID.randomUUID());
-      when(otpService.verifyPasswordResetToken("user@example.com", "valid-reset-token")).thenReturn(true);
+      when(otpService.verifyPasswordResetToken("user@example.com", "valid-reset-token"))
+          .thenReturn(true);
       when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
       when(passwordEncoder.encode("NewPassword123@")).thenReturn("new-hash");
 
-      authService.resetPassword(new ResetPasswordRequest("user@example.com", "valid-reset-token", "NewPassword123@"));
+      authService.resetPassword(
+          new ResetPasswordRequest("user@example.com", "valid-reset-token", "NewPassword123@"));
 
       assertThat(user.getPasswordHash()).isEqualTo("new-hash");
       verify(tokenRevocationService).revokeAllUserSessions(user.getId());
@@ -524,7 +602,8 @@ class AuthServiceTest {
     void resetPassword_whenResetTokenInvalid_throwsInvalidOtpException() {
       when(otpService.verifyPasswordResetToken(testEmail, "expired-token")).thenReturn(false);
 
-      ResetPasswordRequest request = new ResetPasswordRequest(testEmail, "expired-token", "NewPassword123@");
+      ResetPasswordRequest request =
+          new ResetPasswordRequest(testEmail, "expired-token", "NewPassword123@");
       assertThatThrownBy(() -> authService.resetPassword(request))
           .isInstanceOf(InvalidOtpException.class);
       verify(userRepository, never()).save(any(User.class));
@@ -537,7 +616,8 @@ class AuthServiceTest {
       when(otpService.verifyPasswordResetToken(testEmail, "valid-token")).thenReturn(true);
       when(userRepository.findByEmail(testEmail)).thenReturn(Optional.empty());
 
-      ResetPasswordRequest request = new ResetPasswordRequest(testEmail, "valid-token", "NewPassword123@");
+      ResetPasswordRequest request =
+          new ResetPasswordRequest(testEmail, "valid-token", "NewPassword123@");
       assertThatThrownBy(() -> authService.resetPassword(request))
           .isInstanceOf(ResourceNotFoundException.class);
     }
@@ -548,10 +628,12 @@ class AuthServiceTest {
   class ChangePasswordTests {
 
     @Test
-    @DisplayName("changePassword when newPassword and confirmPassword do not match throws InvalidPasswordException")
+    @DisplayName(
+        "changePassword when newPassword and confirmPassword do not match throws InvalidPasswordException")
     void changePassword_whenPasswordsDoNotMatch_throwsInvalidPasswordException() {
       UUID userId = UUID.randomUUID();
-      ChangePasswordRequest request = new ChangePasswordRequest("OldPass123@", "NewPass123@", "DifferentPass123@");
+      ChangePasswordRequest request =
+          new ChangePasswordRequest("OldPass123@", "NewPass123@", "DifferentPass123@");
 
       assertThatThrownBy(() -> authService.changePassword(userId, request))
           .isInstanceOf(InvalidPasswordException.class)
@@ -559,10 +641,12 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("changePassword when newPassword is same as currentPassword throws InvalidPasswordException")
+    @DisplayName(
+        "changePassword when newPassword is same as currentPassword throws InvalidPasswordException")
     void changePassword_whenNewPasswordSameAsCurrentPassword_throwsInvalidPasswordException() {
       UUID userId = UUID.randomUUID();
-      ChangePasswordRequest request = new ChangePasswordRequest("SamePassword123@", "SamePassword123@", "SamePassword123@");
+      ChangePasswordRequest request =
+          new ChangePasswordRequest("SamePassword123@", "SamePassword123@", "SamePassword123@");
 
       assertThatThrownBy(() -> authService.changePassword(userId, request))
           .isInstanceOf(InvalidPasswordException.class)
@@ -575,7 +659,8 @@ class AuthServiceTest {
       UUID userId = UUID.randomUUID();
       when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-      ChangePasswordRequest request = new ChangePasswordRequest("OldPass123@", "NewPass123@", "NewPass123@");
+      ChangePasswordRequest request =
+          new ChangePasswordRequest("OldPass123@", "NewPass123@", "NewPass123@");
       assertThatThrownBy(() -> authService.changePassword(userId, request))
           .isInstanceOf(ResourceNotFoundException.class);
     }
@@ -588,7 +673,8 @@ class AuthServiceTest {
       when(userRepository.findById(userId)).thenReturn(Optional.of(user));
       when(passwordEncoder.matches("WrongCurrent123@", "current-hash")).thenReturn(false);
 
-      ChangePasswordRequest request = new ChangePasswordRequest("WrongCurrent123@", "NewPass123@", "NewPass123@");
+      ChangePasswordRequest request =
+          new ChangePasswordRequest("WrongCurrent123@", "NewPass123@", "NewPass123@");
       assertThatThrownBy(() -> authService.changePassword(userId, request))
           .isInstanceOf(InvalidPasswordException.class)
           .hasMessageContaining("Current password is incorrect");
@@ -603,7 +689,8 @@ class AuthServiceTest {
       when(passwordEncoder.matches("OldPass123@", "current-hash")).thenReturn(true);
       when(passwordEncoder.encode("NewPass123@")).thenReturn("new-hash");
 
-      ChangePasswordRequest request = new ChangePasswordRequest("OldPass123@", "NewPass123@", "NewPass123@");
+      ChangePasswordRequest request =
+          new ChangePasswordRequest("OldPass123@", "NewPass123@", "NewPass123@");
       authService.changePassword(userId, request);
 
       assertThat(user.getPasswordHash()).isEqualTo("new-hash");

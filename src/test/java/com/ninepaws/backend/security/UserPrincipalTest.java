@@ -17,12 +17,13 @@ class UserPrincipalTest {
   @DisplayName("create from User maps all fields and defaults to ROLE_USER")
   void create_fromUser_mapsFieldsCorrectly() {
     UUID userId = UUID.randomUUID();
-    User user = User.builder()
-        .fullName("Nguyen Van A")
-        .email("nguyenvana@ninepaws.com")
-        .passwordHash("hashed-pw-123")
-        .emailVerified(true)
-        .build();
+    User user =
+        User.builder()
+            .fullName("Nguyen Van A")
+            .email("nguyenvana@ninepaws.com")
+            .passwordHash("hashed-pw-123")
+            .emailVerified(true)
+            .build();
     user.setId(userId);
 
     UserPrincipal principal = UserPrincipal.create(user);
@@ -46,18 +47,11 @@ class UserPrincipalTest {
   @DisplayName("custom constructor assigns provided authorities and fields")
   void customConstructor_assignsAuthoritiesAndFields() {
     UUID userId = UUID.randomUUID();
-    List<GrantedAuthority> customAuthorities = List.of(
-        new SimpleGrantedAuthority("ROLE_ADMIN"),
-        new SimpleGrantedAuthority("ROLE_USER")
-    );
+    List<GrantedAuthority> customAuthorities =
+        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
 
-    UserPrincipal principal = new UserPrincipal(
-        userId,
-        "admin@ninepaws.com",
-        "admin-hash",
-        false,
-        customAuthorities
-    );
+    UserPrincipal principal =
+        new UserPrincipal(userId, "admin@ninepaws.com", "admin-hash", false, customAuthorities);
 
     assertThat(principal.getId()).isEqualTo(userId);
     assertThat(principal.getEmail()).isEqualTo("admin@ninepaws.com");
@@ -73,13 +67,7 @@ class UserPrincipalTest {
   @DisplayName("custom constructor with null authorities defaults to ROLE_USER")
   void customConstructor_withNullAuthorities_defaultsToRoleUser() {
     UUID userId = UUID.randomUUID();
-    UserPrincipal principal = new UserPrincipal(
-        userId,
-        "user@ninepaws.com",
-        "hash",
-        true,
-        null
-    );
+    UserPrincipal principal = new UserPrincipal(userId, "user@ninepaws.com", "hash", true, null);
 
     assertThat(principal.getAuthorities())
         .extracting(GrantedAuthority::getAuthority)
@@ -90,9 +78,12 @@ class UserPrincipalTest {
   @DisplayName("equals and hashCode contract based on user id")
   void equalsAndHashCode_basedOnId() {
     UUID userId = UUID.randomUUID();
-    UserPrincipal p1 = new UserPrincipal(userId, "u1@test.com", "h1", true, Collections.emptyList());
-    UserPrincipal p2 = new UserPrincipal(userId, "u2@test.com", "h2", false, Collections.emptyList());
-    UserPrincipal p3 = new UserPrincipal(UUID.randomUUID(), "u1@test.com", "h1", true, Collections.emptyList());
+    UserPrincipal p1 =
+        new UserPrincipal(userId, "u1@test.com", "h1", true, Collections.emptyList());
+    UserPrincipal p2 =
+        new UserPrincipal(userId, "u2@test.com", "h2", false, Collections.emptyList());
+    UserPrincipal p3 =
+        new UserPrincipal(UUID.randomUUID(), "u1@test.com", "h1", true, Collections.emptyList());
 
     assertThat(p1).isEqualTo(p2);
     assertThat(p1.hashCode()).isEqualTo(p2.hashCode());

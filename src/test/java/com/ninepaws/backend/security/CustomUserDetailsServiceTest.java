@@ -22,11 +22,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 @ExtendWith(MockitoExtension.class)
 class CustomUserDetailsServiceTest {
 
-  @Mock
-  private UserRepository userRepository;
+  @Mock private UserRepository userRepository;
 
-  @InjectMocks
-  private CustomUserDetailsService userDetailsService;
+  @InjectMocks private CustomUserDetailsService userDetailsService;
 
   @Nested
   @DisplayName("loadUserByUsername")
@@ -36,12 +34,13 @@ class CustomUserDetailsServiceTest {
     @DisplayName("returns UserPrincipal when user exists with email")
     void loadUserByUsername_whenUserExists_returnsUserPrincipal() {
       UUID userId = UUID.randomUUID();
-      User user = User.builder()
-          .fullName("Test User")
-          .email("user@example.com")
-          .passwordHash("hashed-password")
-          .emailVerified(true)
-          .build();
+      User user =
+          User.builder()
+              .fullName("Test User")
+              .email("user@example.com")
+              .passwordHash("hashed-password")
+              .emailVerified(true)
+              .build();
       user.setId(userId);
 
       when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
@@ -79,12 +78,13 @@ class CustomUserDetailsServiceTest {
     @DisplayName("returns UserPrincipal when user exists with UUID id")
     void loadUserById_whenUserExists_returnsUserPrincipal() {
       UUID userId = UUID.randomUUID();
-      User user = User.builder()
-          .fullName("Test User")
-          .email("iduser@example.com")
-          .passwordHash("hashed-password")
-          .emailVerified(false)
-          .build();
+      User user =
+          User.builder()
+              .fullName("Test User")
+              .email("iduser@example.com")
+              .passwordHash("hashed-password")
+              .emailVerified(false)
+              .build();
       user.setId(userId);
 
       when(userRepository.findById(userId)).thenReturn(Optional.of(user));

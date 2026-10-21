@@ -22,7 +22,8 @@ class SecurityExceptionHandlersTest {
   @Mock private HandlerExceptionResolver resolver;
 
   @Test
-  @DisplayName("CustomAuthenticationEntryPoint forwards AuthenticationException to HandlerExceptionResolver")
+  @DisplayName(
+      "CustomAuthenticationEntryPoint forwards AuthenticationException to HandlerExceptionResolver")
   void authenticationEntryPoint_delegatesToResolver() {
     CustomAuthenticationEntryPoint entryPoint = new CustomAuthenticationEntryPoint(resolver);
     HttpServletRequest request = new MockHttpServletRequest();
@@ -35,7 +36,8 @@ class SecurityExceptionHandlersTest {
   }
 
   @Test
-  @DisplayName("CustomAccessDeniedHandler forwards AccessDeniedException to HandlerExceptionResolver")
+  @DisplayName(
+      "CustomAccessDeniedHandler forwards AccessDeniedException to HandlerExceptionResolver")
   void accessDeniedHandler_delegatesToResolver() {
     CustomAccessDeniedHandler handler = new CustomAccessDeniedHandler(resolver);
     HttpServletRequest request = new MockHttpServletRequest();

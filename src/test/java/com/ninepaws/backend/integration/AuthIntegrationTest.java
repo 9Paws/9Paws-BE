@@ -45,8 +45,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -55,6 +55,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
 @SpringBootTest(properties = "management.health.mail.enabled=false")
 @AutoConfigureMockMvc
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -89,8 +90,7 @@ class AuthIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
 
-  private final ObjectMapper objectMapper =
-      new ObjectMapper().registerModule(new JavaTimeModule());
+  private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
   @Autowired private UserRepository userRepository;
 
@@ -171,7 +171,8 @@ class AuthIntegrationTest {
         .andExpect(jsonPath("$.httpStatus").value(201))
         .andExpect(
             jsonPath("$.message")
-                .value("User registered successfully. Please verify your email with the OTP sent."));
+                .value(
+                    "User registered successfully. Please verify your email with the OTP sent."));
 
     // Verify unverified user in database
     var userOpt = userRepository.findByEmail(EMAIL_SCENARIO_1);
@@ -194,7 +195,8 @@ class AuthIntegrationTest {
   // =========================================================================
   @Test
   @Order(2)
-  @DisplayName("Scenario 2: Email verification -> verifies OTP, marks email verified, returns tokens")
+  @DisplayName(
+      "Scenario 2: Email verification -> verifies OTP, marks email verified, returns tokens")
   void scenario2_emailVerification_returnsTokens() throws Exception {
     RegisterRequest registerRequest =
         new RegisterRequest("Trần Thị Bình", EMAIL_SCENARIO_2, DEFAULT_PASSWORD);
@@ -297,7 +299,8 @@ class AuthIntegrationTest {
   }
 
   // =========================================================================
-  // SCENARIO 4: Access protected endpoint (/api/v1/auth/change-password) with access token -> 200 OK
+  // SCENARIO 4: Access protected endpoint (/api/v1/auth/change-password) with access token -> 200
+  // OK
   // =========================================================================
   @Test
   @Order(4)
@@ -347,7 +350,8 @@ class AuthIntegrationTest {
   // =========================================================================
   @Test
   @Order(5)
-  @DisplayName("Scenario 5: Access protected endpoint with forged or expired token -> 401 Unauthorized")
+  @DisplayName(
+      "Scenario 5: Access protected endpoint with forged or expired token -> 401 Unauthorized")
   void scenario5_accessProtectedEndpoint_withForgedOrExpiredToken_returns401() throws Exception {
     User user = createVerifiedUser(EMAIL_SCENARIO_5, DEFAULT_PASSWORD);
 
@@ -566,7 +570,8 @@ class AuthIntegrationTest {
   }
 
   // =========================================================================
-  // SCENARIO 8: Forgot password -> verify OTP -> reset password -> old login fails, new login succeeds
+  // SCENARIO 8: Forgot password -> verify OTP -> reset password -> old login fails, new login
+  // succeeds
   // =========================================================================
   @Test
   @Order(8)
@@ -585,8 +590,7 @@ class AuthIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.httpStatus").value(200))
         .andExpect(
-            jsonPath("$.message")
-                .value("Password reset OTP sent to email if account exists"));
+            jsonPath("$.message").value("Password reset OTP sent to email if account exists"));
 
     verify(mailSender, timeout(3000).atLeastOnce()).send(any(MimeMessage.class));
 
@@ -662,7 +666,8 @@ class AuthIntegrationTest {
   // =========================================================================
   @Test
   @Order(9)
-  @DisplayName("Full Unified Lifecycle: Register -> Verify -> Login -> Protected -> Rotate -> Logout -> Reset")
+  @DisplayName(
+      "Full Unified Lifecycle: Register -> Verify -> Login -> Protected -> Rotate -> Logout -> Reset")
   void shouldExecuteCompleteEndToEndSecurityLifecycle() throws Exception {
     // 1. Register
     RegisterRequest registerRequest =
@@ -686,7 +691,8 @@ class AuthIntegrationTest {
         .andExpect(jsonPath("$.errorCode").value("AUTH_103"))
         .andExpect(
             jsonPath("$.message")
-                .value("Account is not verified. Please verify your email via OTP before logging in."));
+                .value(
+                    "Account is not verified. Please verify your email via OTP before logging in."));
 
     // 3. Verify registration OTP
     String regOtp =
@@ -697,8 +703,7 @@ class AuthIntegrationTest {
         .perform(
             post("/api/v1/auth/verify-registration-otp")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(new VerifyOtpRequest(EMAIL_E2E, regOtp))))
+                .content(objectMapper.writeValueAsString(new VerifyOtpRequest(EMAIL_E2E, regOtp))))
         .andExpect(status().isOk());
 
     // 4. Login after verification
@@ -750,8 +755,7 @@ class AuthIntegrationTest {
                 post("/api/v1/auth/refresh-token")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
-                        objectMapper.writeValueAsString(
-                            new RefreshTokenRequest(refreshToken2))))
+                        objectMapper.writeValueAsString(new RefreshTokenRequest(refreshToken2))))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -764,9 +768,7 @@ class AuthIntegrationTest {
         .perform(
             post("/api/v1/auth/refresh-token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(
-                        new RefreshTokenRequest(refreshToken2))))
+                .content(objectMapper.writeValueAsString(new RefreshTokenRequest(refreshToken2))))
         .andExpect(status().isUnauthorized());
 
     // 8. Logout with accessToken3
@@ -775,9 +777,7 @@ class AuthIntegrationTest {
             post("/api/v1/auth/logout")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken3)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(
-                        new RefreshTokenRequest(refreshToken3))))
+                .content(objectMapper.writeValueAsString(new RefreshTokenRequest(refreshToken3))))
         .andExpect(status().isOk());
 
     // Immediate reuse of blacklisted accessToken3 gives 401
@@ -797,8 +797,7 @@ class AuthIntegrationTest {
         .perform(
             post("/api/v1/auth/forgot-password")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(new ForgotPasswordRequest(EMAIL_E2E))))
+                .content(objectMapper.writeValueAsString(new ForgotPasswordRequest(EMAIL_E2E))))
         .andExpect(status().isOk());
 
     String fpOtp =
@@ -813,8 +812,7 @@ class AuthIntegrationTest {
                 post("/api/v1/auth/verify-forgot-password-otp")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
-                        objectMapper.writeValueAsString(
-                            new VerifyOtpRequest(EMAIL_E2E, fpOtp))))
+                        objectMapper.writeValueAsString(new VerifyOtpRequest(EMAIL_E2E, fpOtp))))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -840,8 +838,7 @@ class AuthIntegrationTest {
             post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                    objectMapper.writeValueAsString(
-                        new LoginRequest(EMAIL_E2E, UPDATED_PASSWORD))))
+                    objectMapper.writeValueAsString(new LoginRequest(EMAIL_E2E, UPDATED_PASSWORD))))
         .andExpect(status().isUnauthorized());
 
     // Final new login succeeds
@@ -850,8 +847,7 @@ class AuthIntegrationTest {
             post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                    objectMapper.writeValueAsString(
-                        new LoginRequest(EMAIL_E2E, RESET_PASSWORD))))
+                    objectMapper.writeValueAsString(new LoginRequest(EMAIL_E2E, RESET_PASSWORD))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.httpStatus").value(200));
   }

@@ -16,8 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Getter
 public class UserPrincipal implements UserDetails, Serializable {
 
-  @Serial
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   private static final String DEFAULT_ROLE = "ROLE_USER";
 
@@ -37,22 +36,17 @@ public class UserPrincipal implements UserDetails, Serializable {
     this.email = email;
     this.passwordHash = passwordHash;
     this.emailVerified = emailVerified;
-    this.authorities = authorities != null
-        ? Collections.unmodifiableCollection(authorities)
-        : Collections.singletonList(new SimpleGrantedAuthority(DEFAULT_ROLE));
+    this.authorities =
+        authorities != null
+            ? Collections.unmodifiableCollection(authorities)
+            : Collections.singletonList(new SimpleGrantedAuthority(DEFAULT_ROLE));
   }
 
   public static UserPrincipal create(User user) {
-    List<GrantedAuthority> authorities = Collections.singletonList(
-        new SimpleGrantedAuthority(DEFAULT_ROLE)
-    );
+    List<GrantedAuthority> authorities =
+        Collections.singletonList(new SimpleGrantedAuthority(DEFAULT_ROLE));
     return new UserPrincipal(
-        user.getId(),
-        user.getEmail(),
-        user.getPasswordHash(),
-        user.isEmailVerified(),
-        authorities
-    );
+        user.getId(), user.getEmail(), user.getPasswordHash(), user.isEmailVerified(), authorities);
   }
 
   public static UserPrincipal from(User user) {
@@ -114,10 +108,15 @@ public class UserPrincipal implements UserDetails, Serializable {
   @Override
   public String toString() {
     return "UserPrincipal{"
-        + "id=" + id
-        + ", email='" + email + '\''
-        + ", emailVerified=" + emailVerified
-        + ", authorities=" + authorities
+        + "id="
+        + id
+        + ", email='"
+        + email
+        + '\''
+        + ", emailVerified="
+        + emailVerified
+        + ", authorities="
+        + authorities
         + '}';
   }
 }

@@ -35,17 +35,13 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @ExtendWith(MockitoExtension.class)
 class JwtAuthenticationFilterTest {
 
-  @Mock
-  private JwtService jwtService;
+  @Mock private JwtService jwtService;
 
-  @Mock
-  private TokenRevocationService tokenRevocationService;
+  @Mock private TokenRevocationService tokenRevocationService;
 
-  @Mock
-  private CustomUserDetailsService userDetailsService;
+  @Mock private CustomUserDetailsService userDetailsService;
 
-  @InjectMocks
-  private JwtAuthenticationFilter jwtAuthenticationFilter;
+  @InjectMocks private JwtAuthenticationFilter jwtAuthenticationFilter;
 
   private UserPrincipal mockPrincipal;
 
@@ -298,7 +294,8 @@ class JwtAuthenticationFilterTest {
 
       assertThat(config).isNotNull();
       assertThat(config.getAllowCredentials()).isTrue();
-      assertThat(config.getAllowedOriginPatterns()).contains("http://localhost:*", "http://127.0.0.1:*");
+      assertThat(config.getAllowedOriginPatterns())
+          .contains("http://localhost:*", "http://127.0.0.1:*");
       assertThat(config.getAllowedMethods())
           .contains("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
     }
@@ -306,13 +303,16 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("corsConfigurationSource parses and trims comma-separated allowed origin patterns")
     void corsConfigurationSource_parsesAndTrimsCustomOrigins() {
-      SecurityConfig customConfig = new SecurityConfig(jwtAuthenticationFilter, " https://ninepaws.com , https://app.ninepaws.com ");
+      SecurityConfig customConfig =
+          new SecurityConfig(
+              jwtAuthenticationFilter, " https://ninepaws.com , https://app.ninepaws.com ");
       CorsConfigurationSource source = customConfig.corsConfigurationSource();
       MockHttpServletRequest request = new MockHttpServletRequest();
       CorsConfiguration config = source.getCorsConfiguration(request);
 
       assertThat(config).isNotNull();
-      assertThat(config.getAllowedOriginPatterns()).containsExactly("https://ninepaws.com", "https://app.ninepaws.com");
+      assertThat(config.getAllowedOriginPatterns())
+          .containsExactly("https://ninepaws.com", "https://app.ninepaws.com");
     }
   }
 }

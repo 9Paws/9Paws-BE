@@ -7,16 +7,13 @@ import static org.mockito.Mockito.when;
 import com.ninepaws.backend.dtos.response.ResponseFactory;
 import com.ninepaws.backend.dtos.response.base.DetailedErrorResponse;
 import com.ninepaws.backend.dtos.response.base.ErrorResponse;
-import com.ninepaws.backend.exceptions.error.AuthErrorCode;
 import com.ninepaws.backend.exceptions.error.SystemErrorCode;
 import com.ninepaws.backend.exceptions.error.UserErrorCode;
 import com.ninepaws.backend.exceptions.error.WebErrorCode;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,10 +30,8 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 class GlobalExceptionHandlerTest {
@@ -109,8 +104,7 @@ class GlobalExceptionHandlerTest {
 
     ConstraintViolationException ex = new ConstraintViolationException(Set.of(violation));
 
-    ResponseEntity<DetailedErrorResponse> response =
-        handler.handleConstraintViolation(ex, request);
+    ResponseEntity<DetailedErrorResponse> response = handler.handleConstraintViolation(ex, request);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(response.getBody()).isNotNull();

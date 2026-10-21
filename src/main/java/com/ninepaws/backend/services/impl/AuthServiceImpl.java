@@ -85,8 +85,7 @@ public class AuthServiceImpl implements AuthService {
             .findByEmail(request.email())
             .orElseThrow(
                 () ->
-                    new ResourceNotFoundException(
-                        "User not found with email: " + request.email()));
+                    new ResourceNotFoundException("User not found with email: " + request.email()));
 
     boolean valid = otpService.verifyOtp(request.email(), OtpType.REGISTER, request.otp());
     if (!valid) {
@@ -108,8 +107,7 @@ public class AuthServiceImpl implements AuthService {
             .findByEmail(request.email())
             .orElseThrow(
                 () ->
-                    new ResourceNotFoundException(
-                        "User not found with email: " + request.email()));
+                    new ResourceNotFoundException("User not found with email: " + request.email()));
 
     otpService.checkCooldown(request.email(), request.type());
     String otp = otpService.generateAndStoreOtp(request.email(), request.type());
@@ -160,9 +158,7 @@ public class AuthServiceImpl implements AuthService {
         userRepository
             .findById(payload.userId())
             .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "User not found with id: " + payload.userId()));
+                () -> new ResourceNotFoundException("User not found with id: " + payload.userId()));
 
     tokenRevocationService.revokeRefreshToken(payload.userId(), payload.jti());
     log.info("Rotated refresh token for user: {}", payload.userId());
@@ -181,9 +177,11 @@ public class AuthServiceImpl implements AuthService {
       try {
         TokenPayload accessPayload = jwtService.parseAndValidateToken(cleanToken);
         if (accessPayload != null && accessPayload.jti() != null) {
-          long remainingMs = accessPayload.expiresAt() != null
-              ? Math.max(0L, accessPayload.expiresAt().toEpochMilli() - System.currentTimeMillis())
-              : 0L;
+          long remainingMs =
+              accessPayload.expiresAt() != null
+                  ? Math.max(
+                      0L, accessPayload.expiresAt().toEpochMilli() - System.currentTimeMillis())
+                  : 0L;
           tokenRevocationService.blacklistAccessToken(accessPayload.jti(), remainingMs);
         }
       } catch (Exception e) {
@@ -197,8 +195,7 @@ public class AuthServiceImpl implements AuthService {
         if (refreshPayload != null
             && refreshPayload.userId() != null
             && refreshPayload.jti() != null) {
-          tokenRevocationService.revokeRefreshToken(
-              refreshPayload.userId(), refreshPayload.jti());
+          tokenRevocationService.revokeRefreshToken(refreshPayload.userId(), refreshPayload.jti());
         }
       } catch (Exception e) {
         log.warn("Failed to revoke refresh token during logout: {}", e.getMessage());
@@ -218,9 +215,11 @@ public class AuthServiceImpl implements AuthService {
       try {
         TokenPayload accessPayload = jwtService.parseAndValidateToken(cleanToken);
         if (accessPayload != null && accessPayload.jti() != null) {
-          long remainingMs = accessPayload.expiresAt() != null
-              ? Math.max(0L, accessPayload.expiresAt().toEpochMilli() - System.currentTimeMillis())
-              : 0L;
+          long remainingMs =
+              accessPayload.expiresAt() != null
+                  ? Math.max(
+                      0L, accessPayload.expiresAt().toEpochMilli() - System.currentTimeMillis())
+                  : 0L;
           tokenRevocationService.blacklistAccessToken(accessPayload.jti(), remainingMs);
         }
       } catch (Exception e) {
@@ -252,12 +251,10 @@ public class AuthServiceImpl implements AuthService {
   @Transactional(readOnly = true)
   public VerifyResetPasswordOtpResponse verifyForgotPasswordOtp(VerifyOtpRequest request) {
     if (!userRepository.existsByEmail(request.email())) {
-      throw new ResourceNotFoundException(
-          "User not found with email: " + request.email());
+      throw new ResourceNotFoundException("User not found with email: " + request.email());
     }
 
-    boolean valid =
-        otpService.verifyOtp(request.email(), OtpType.FORGOT_PASSWORD, request.otp());
+    boolean valid = otpService.verifyOtp(request.email(), OtpType.FORGOT_PASSWORD, request.otp());
     if (!valid) {
       throw new InvalidOtpException("Invalid or expired OTP");
     }
@@ -270,8 +267,7 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional
   public void resetPassword(ResetPasswordRequest request) {
-    boolean validToken =
-        otpService.verifyPasswordResetToken(request.email(), request.resetToken());
+    boolean validToken = otpService.verifyPasswordResetToken(request.email(), request.resetToken());
     if (!validToken) {
       throw new InvalidOtpException("Invalid or expired password reset token");
     }
@@ -281,8 +277,7 @@ public class AuthServiceImpl implements AuthService {
             .findByEmail(request.email())
             .orElseThrow(
                 () ->
-                    new ResourceNotFoundException(
-                        "User not found with email: " + request.email()));
+                    new ResourceNotFoundException("User not found with email: " + request.email()));
 
     user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
     userRepository.save(user);
@@ -295,20 +290,17 @@ public class AuthServiceImpl implements AuthService {
   @Transactional
   public void changePassword(UUID userId, ChangePasswordRequest request) {
     if (!request.newPassword().equals(request.confirmPassword())) {
-      throw new InvalidPasswordException(
-          "New password and confirmation password do not match");
+      throw new InvalidPasswordException("New password and confirmation password do not match");
     }
 
     if (request.newPassword().equals(request.currentPassword())) {
-      throw new InvalidPasswordException(
-          "New password must be different from current password");
+      throw new InvalidPasswordException("New password must be different from current password");
     }
 
     User user =
         userRepository
             .findById(userId)
-            .orElseThrow(
-                () -> new ResourceNotFoundException("User not found with id: " + userId));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
     if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
       throw new InvalidPasswordException("Current password is incorrect");
@@ -339,10 +331,7 @@ public class AuthServiceImpl implements AuthService {
     String refreshToken = jwtService.generateRefreshToken(effectiveUserId, refreshJti);
 
     tokenRevocationService.recordRefreshToken(
-        effectiveUserId,
-        refreshJti,
-        refreshToken,
-        jwtService.getRefreshTokenExpirationSeconds());
+        effectiveUserId, refreshJti, refreshToken, jwtService.getRefreshTokenExpirationSeconds());
 
     UserResponse userResponse =
         new UserResponse(

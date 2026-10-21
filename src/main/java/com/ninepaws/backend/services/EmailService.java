@@ -1,8 +1,6 @@
 package com.ninepaws.backend.services;
 
-/**
- * Service for sending transactional emails (such as OTP codes).
- */
+/** Service for sending transactional emails (such as OTP codes). */
 public interface EmailService {
 
   /**

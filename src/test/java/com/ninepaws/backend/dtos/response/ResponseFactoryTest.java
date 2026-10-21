@@ -64,7 +64,8 @@ class ResponseFactoryTest {
   }
 
   @Test
-  @DisplayName("success(HttpStatus, T data, String message) returns SingleResponse with custom status")
+  @DisplayName(
+      "success(HttpStatus, T data, String message) returns SingleResponse with custom status")
   void successWithStatusDataAndMessage_returnsSingleResponse() {
     ResponseEntity<SingleResponse<Integer>> response =
         responseFactory.success(HttpStatus.CREATED, 42, "Item created");
@@ -77,7 +78,8 @@ class ResponseFactoryTest {
   }
 
   @Test
-  @DisplayName("successPage returns SingleResponse wrapping PageResponse without leaking PageImpl metadata")
+  @DisplayName(
+      "successPage returns SingleResponse wrapping PageResponse without leaking PageImpl metadata")
   void successPage_returnsSingleResponseWithPageResponse() {
     List<String> items = List.of("item1", "item2");
     Page<String> page = new PageImpl<>(items, PageRequest.of(0, 10), 2);

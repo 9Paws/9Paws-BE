@@ -52,7 +52,8 @@ public class AuthController extends AbstractBaseController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<SingleResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+  public ResponseEntity<SingleResponse<AuthResponse>> login(
+      @Valid @RequestBody LoginRequest request) {
     AuthResponse response = authService.login(request);
     return success(response, "Login successful");
   }

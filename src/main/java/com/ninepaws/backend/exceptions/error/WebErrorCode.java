@@ -14,12 +14,10 @@ public enum WebErrorCode implements AppErrorCode {
   FORBIDDEN("WEB_403", "Access Denied: You do not have permission", HttpStatus.FORBIDDEN),
   NOT_FOUND("WEB_404", "Not Found: The requested resource was not found", HttpStatus.NOT_FOUND),
   METHOD_NOT_ALLOWED("WEB_405", "Method Not Allowed", HttpStatus.METHOD_NOT_ALLOWED),
-  UNSUPPORTED_MEDIA_TYPE(
-      "WEB_415", "Unsupported Media Type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
+  UNSUPPORTED_MEDIA_TYPE("WEB_415", "Unsupported Media Type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
   TOO_MANY_REQUESTS(
       "WEB_429", "Too Many Requests: Rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS),
-  INTERNAL_SERVER_ERROR(
-      "WEB_500", "Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
+  INTERNAL_SERVER_ERROR("WEB_500", "Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
 
   private final String errorCode;
   private final String message;

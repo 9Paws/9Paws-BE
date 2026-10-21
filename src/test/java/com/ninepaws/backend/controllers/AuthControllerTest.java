@@ -166,7 +166,14 @@ class AuthControllerTest {
               "Bearer",
               1800L,
               new UserResponse(
-                  UUID.randomUUID(), "Test User", "test@ninepaws.com", null, null, true, "VND", "vi"));
+                  UUID.randomUUID(),
+                  "Test User",
+                  "test@ninepaws.com",
+                  null,
+                  null,
+                  true,
+                  "VND",
+                  "vi"));
       when(authService.verifyRegistrationOtp(any(VerifyOtpRequest.class))).thenReturn(mockAuth);
 
       mockMvc
@@ -286,7 +293,14 @@ class AuthControllerTest {
               "Bearer",
               1800L,
               new UserResponse(
-                  UUID.randomUUID(), "Test User", "test@ninepaws.com", null, null, true, "VND", "vi"));
+                  UUID.randomUUID(),
+                  "Test User",
+                  "test@ninepaws.com",
+                  null,
+                  null,
+                  true,
+                  "VND",
+                  "vi"));
 
       when(authService.login(any(LoginRequest.class))).thenReturn(mockAuth);
 
@@ -352,7 +366,14 @@ class AuthControllerTest {
               "Bearer",
               1800L,
               new UserResponse(
-                  UUID.randomUUID(), "Test User", "test@ninepaws.com", null, null, true, "VND", "vi"));
+                  UUID.randomUUID(),
+                  "Test User",
+                  "test@ninepaws.com",
+                  null,
+                  null,
+                  true,
+                  "VND",
+                  "vi"));
       when(authService.refreshToken(any(RefreshTokenRequest.class))).thenReturn(mockAuth);
 
       mockMvc
@@ -589,8 +610,7 @@ class AuthControllerTest {
       UUID userId = UUID.randomUUID();
       setAuthenticatedUser(userId, "test@ninepaws.com");
 
-      ChangePasswordRequest req =
-          new ChangePasswordRequest("OldPassword123@", "weak", "weak");
+      ChangePasswordRequest req = new ChangePasswordRequest("OldPassword123@", "weak", "weak");
 
       mockMvc
           .perform(

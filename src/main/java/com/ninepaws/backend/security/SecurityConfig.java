@@ -1,14 +1,11 @@
 package com.ninepaws.backend.security;
 
-import jakarta.servlet.http.HttpServletResponse;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -55,6 +52,7 @@ public class SecurityConfig {
   public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, String allowedOrigins) {
     this(jwtAuthenticationFilter, null, null, allowedOrigins);
   }
+
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder(12);
@@ -68,8 +66,7 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .csrf(AbstractHttpConfigurer::disable)
+    http.csrf(AbstractHttpConfigurer::disable)
         .cors(Customizer.withDefaults())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -115,12 +112,13 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    List<String> origins = (allowedOrigins == null || allowedOrigins.isBlank())
-        ? List.of("http://localhost:*", "http://127.0.0.1:*")
-        : Arrays.stream(allowedOrigins.split(","))
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .toList();
+    List<String> origins =
+        (allowedOrigins == null || allowedOrigins.isBlank())
+            ? List.of("http://localhost:*", "http://127.0.0.1:*")
+            : Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
     configuration.setAllowedOriginPatterns(origins);
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));

@@ -125,9 +125,7 @@ public class GlobalExceptionHandler {
 
     for (ConstraintViolation<?> violation : e.getConstraintViolations()) {
       String propertyPath = violation.getPropertyPath().toString();
-      errors
-          .computeIfAbsent(propertyPath, k -> new ArrayList<>())
-          .add(violation.getMessage());
+      errors.computeIfAbsent(propertyPath, k -> new ArrayList<>()).add(violation.getMessage());
     }
 
     DetailedErrorResponse response =
@@ -157,7 +155,8 @@ public class GlobalExceptionHandler {
                       .filter(Objects::nonNull)
                       .toList();
               errors
-                  .computeIfAbsent(paramName != null ? paramName : "parameter", k -> new ArrayList<>())
+                  .computeIfAbsent(
+                      paramName != null ? paramName : "parameter", k -> new ArrayList<>())
                   .addAll(messages);
             });
 
@@ -274,8 +273,7 @@ public class GlobalExceptionHandler {
     return buildFromAppErrorCode(SystemErrorCode.INTERNAL_SERVER_ERROR, request.getRequestURI());
   }
 
-  private ResponseEntity<ErrorResponse> buildFromAppErrorCode(
-      AppErrorCode errorCode, String path) {
+  private ResponseEntity<ErrorResponse> buildFromAppErrorCode(AppErrorCode errorCode, String path) {
     return buildFromAppErrorCode(errorCode, path, errorCode.getMessage());
   }
 

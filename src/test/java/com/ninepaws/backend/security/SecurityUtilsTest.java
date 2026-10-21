@@ -28,13 +28,8 @@ class SecurityUtilsTest {
     @DisplayName("returns UserPrincipal when authenticated in SecurityContext")
     void getCurrentUserPrincipal_whenAuthenticated_returnsPrincipal() {
       UUID userId = UUID.randomUUID();
-      UserPrincipal principal = new UserPrincipal(
-          userId,
-          "test@example.com",
-          "hash",
-          true,
-          Collections.emptyList()
-      );
+      UserPrincipal principal =
+          new UserPrincipal(userId, "test@example.com", "hash", true, Collections.emptyList());
       UsernamePasswordAuthenticationToken auth =
           new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
       SecurityContextHolder.getContext().setAuthentication(auth);
@@ -58,13 +53,8 @@ class SecurityUtilsTest {
     @DisplayName("returns null when authentication is not authenticated")
     void getCurrentUserPrincipal_whenNotAuthenticated_returnsNull() {
       UUID userId = UUID.randomUUID();
-      UserPrincipal principal = new UserPrincipal(
-          userId,
-          "test@example.com",
-          "hash",
-          true,
-          Collections.emptyList()
-      );
+      UserPrincipal principal =
+          new UserPrincipal(userId, "test@example.com", "hash", true, Collections.emptyList());
       UsernamePasswordAuthenticationToken auth =
           new UsernamePasswordAuthenticationToken(principal, null);
       auth.setAuthenticated(false);
@@ -92,13 +82,8 @@ class SecurityUtilsTest {
     @DisplayName("returns userId when authenticated with UserPrincipal")
     void getCurrentUserId_whenUserPrincipal_returnsId() {
       UUID userId = UUID.randomUUID();
-      UserPrincipal principal = new UserPrincipal(
-          userId,
-          "test@example.com",
-          "hash",
-          true,
-          Collections.emptyList()
-      );
+      UserPrincipal principal =
+          new UserPrincipal(userId, "test@example.com", "hash", true, Collections.emptyList());
       UsernamePasswordAuthenticationToken auth =
           new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
       SecurityContextHolder.getContext().setAuthentication(auth);
