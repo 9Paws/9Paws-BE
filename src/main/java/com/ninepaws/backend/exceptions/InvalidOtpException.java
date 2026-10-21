@@ -1,10 +1,14 @@
 package com.ninepaws.backend.exceptions;
 
-import org.springframework.http.HttpStatus;
+import com.ninepaws.backend.exceptions.error.AuthErrorCode;
 
 public class InvalidOtpException extends AppException {
 
   public InvalidOtpException(String message) {
-    super(message, HttpStatus.BAD_REQUEST);
+    super(AuthErrorCode.INVALID_OTP, message);
+  }
+
+  public InvalidOtpException() {
+    super(AuthErrorCode.INVALID_OTP);
   }
 }

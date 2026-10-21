@@ -1,10 +1,14 @@
 package com.ninepaws.backend.exceptions;
 
-import org.springframework.http.HttpStatus;
+import com.ninepaws.backend.exceptions.error.AuthErrorCode;
 
 public class AccountNotVerifiedException extends AppException {
 
   public AccountNotVerifiedException(String message) {
-    super(message, HttpStatus.FORBIDDEN);
+    super(AuthErrorCode.ACCOUNT_NOT_VERIFIED, message);
+  }
+
+  public AccountNotVerifiedException() {
+    super(AuthErrorCode.ACCOUNT_NOT_VERIFIED);
   }
 }

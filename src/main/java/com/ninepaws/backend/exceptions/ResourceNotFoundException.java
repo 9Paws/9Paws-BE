@@ -1,10 +1,14 @@
 package com.ninepaws.backend.exceptions;
 
-import org.springframework.http.HttpStatus;
+import com.ninepaws.backend.exceptions.error.UserErrorCode;
 
 public class ResourceNotFoundException extends AppException {
 
   public ResourceNotFoundException(String message) {
-    super(message, HttpStatus.NOT_FOUND);
+    super(UserErrorCode.USER_NOT_FOUND, message);
+  }
+
+  public ResourceNotFoundException() {
+    super(UserErrorCode.USER_NOT_FOUND);
   }
 }
