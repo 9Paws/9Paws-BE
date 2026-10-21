@@ -1,0 +1,10 @@
+[Unit]
+Description=Trigger 9Paws GitOps Reconciliation every 3 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=3min
+Unit=ninepaws-sync.service
+
+[Install]
+WantedBy=timers.target
