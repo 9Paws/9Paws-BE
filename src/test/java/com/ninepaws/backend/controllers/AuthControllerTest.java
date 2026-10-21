@@ -601,7 +601,9 @@ class AuthControllerTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.httpStatus").value(200));
 
-      verify(authService).changePassword(eq(userId), any(ChangePasswordRequest.class));
+      verify(authService)
+          .changePassword(
+              eq(userId), eq("Bearer my-access-token"), any(ChangePasswordRequest.class));
     }
 
     @Test

@@ -5,7 +5,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -338,11 +340,21 @@ class AuthIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.httpStatus").value(200))
         .andExpect(jsonPath("$.message").value("Password changed successfully"));
-
     // Verify password was actually updated in database
     User updatedUser = userRepository.findById(user.getId()).orElseThrow();
     assertThat(passwordEncoder.matches(UPDATED_PASSWORD, updatedUser.getPasswordHash())).isTrue();
     assertThat(passwordEncoder.matches(DEFAULT_PASSWORD, updatedUser.getPasswordHash())).isFalse();
+
+    // Verify that the access token used to change password is now blacklisted -> 401 Unauthorized
+    mockMvc
+        .perform(
+            post("/api/v1/auth/change-password")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(changePasswordRequest)))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.httpStatus").value(401))
+        .andExpect(jsonPath("$.errorCode").value("WEB_401"));
   }
 
   // =========================================================================
@@ -850,5 +862,14 @@ class AuthIntegrationTest {
                     objectMapper.writeValueAsString(new LoginRequest(EMAIL_E2E, RESET_PASSWORD))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.httpStatus").value(200));
+  }
+
+  @Test
+  @DisplayName("Anonymous access to /docs is permitted and returns Scalar HTML")
+  void shouldAllowUnauthenticatedAccessToScalarDocs() throws Exception {
+    mockMvc
+        .perform(get("/docs"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
   }
 }

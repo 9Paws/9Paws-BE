@@ -34,5 +34,5 @@ public interface AuthService {
 
   void resetPassword(ResetPasswordRequest request);
 
-  void changePassword(UUID userId, ChangePasswordRequest request);
+  void changePassword(UUID userId, String accessToken, ChangePasswordRequest request);
 }

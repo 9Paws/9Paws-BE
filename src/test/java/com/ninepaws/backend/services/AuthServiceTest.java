@@ -70,9 +70,12 @@ class AuthServiceTest {
   class RegisterTests {
 
     @Test
-    @DisplayName("register when email already exists throws DuplicateResourceException")
-    void register_whenEmailAlreadyExists_throwsDuplicateResourceException() {
-      when(userRepository.existsByEmail(testEmail)).thenReturn(true);
+    @DisplayName(
+        "register when email already exists and verified throws DuplicateResourceException")
+    void register_whenEmailAlreadyExistsAndVerified_throwsDuplicateResourceException() {
+      User verifiedUser =
+          User.builder().email(testEmail).fullName("Existing User").emailVerified(true).build();
+      when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(verifiedUser));
       RegisterRequest request = new RegisterRequest("User", testEmail, testPassword);
 
       assertThatThrownBy(() -> authService.register(request))
@@ -82,9 +85,39 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName(
+        "register when email exists but unverified updates details, generates OTP and sends email")
+    void register_whenEmailExistsButUnverified_updatesUserAndSendsOtp() {
+      User unverifiedUser =
+          User.builder()
+              .email(testEmail)
+              .fullName("Old Name")
+              .passwordHash("oldHash")
+              .emailVerified(false)
+              .build();
+      when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(unverifiedUser));
+      when(passwordEncoder.encode(testPassword)).thenReturn(encodedPassword);
+      when(otpService.generateAndStoreOtp(testEmail, OtpType.REGISTER)).thenReturn("123456");
+
+      RegisterRequest request = new RegisterRequest("New Name", testEmail, testPassword);
+      authService.register(request);
+
+      ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+      verify(userRepository).save(userCaptor.capture());
+      User savedUser = userCaptor.getValue();
+      assertThat(savedUser.getEmail()).isEqualTo(testEmail);
+      assertThat(savedUser.getFullName()).isEqualTo("New Name");
+      assertThat(savedUser.getPasswordHash()).isEqualTo(encodedPassword);
+      assertThat(savedUser.isEmailVerified()).isFalse();
+
+      verify(otpService).generateAndStoreOtp(testEmail, OtpType.REGISTER);
+      verify(emailService).sendRegistrationOtp(testEmail, "New Name", "123456");
+    }
+
+    @Test
     @DisplayName("register when email is new saves unverified user, generates OTP, and sends email")
     void register_whenEmailIsNew_savesUserAndGeneratesOtpAndSendsEmail() {
-      when(userRepository.existsByEmail(testEmail)).thenReturn(false);
+      when(userRepository.findByEmail(testEmail)).thenReturn(Optional.empty());
       when(passwordEncoder.encode(testPassword)).thenReturn(encodedPassword);
       when(otpService.generateAndStoreOtp(testEmail, OtpType.REGISTER)).thenReturn("123456");
 
@@ -635,7 +668,7 @@ class AuthServiceTest {
       ChangePasswordRequest request =
           new ChangePasswordRequest("OldPass123@", "NewPass123@", "DifferentPass123@");
 
-      assertThatThrownBy(() -> authService.changePassword(userId, request))
+      assertThatThrownBy(() -> authService.changePassword(userId, null, request))
           .isInstanceOf(InvalidPasswordException.class)
           .hasMessageContaining("match");
     }
@@ -648,7 +681,7 @@ class AuthServiceTest {
       ChangePasswordRequest request =
           new ChangePasswordRequest("SamePassword123@", "SamePassword123@", "SamePassword123@");
 
-      assertThatThrownBy(() -> authService.changePassword(userId, request))
+      assertThatThrownBy(() -> authService.changePassword(userId, null, request))
           .isInstanceOf(InvalidPasswordException.class)
           .hasMessageContaining("different");
     }
@@ -661,7 +694,7 @@ class AuthServiceTest {
 
       ChangePasswordRequest request =
           new ChangePasswordRequest("OldPass123@", "NewPass123@", "NewPass123@");
-      assertThatThrownBy(() -> authService.changePassword(userId, request))
+      assertThatThrownBy(() -> authService.changePassword(userId, null, request))
           .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -675,14 +708,43 @@ class AuthServiceTest {
 
       ChangePasswordRequest request =
           new ChangePasswordRequest("WrongCurrent123@", "NewPass123@", "NewPass123@");
-      assertThatThrownBy(() -> authService.changePassword(userId, request))
+      assertThatThrownBy(() -> authService.changePassword(userId, null, request))
           .isInstanceOf(InvalidPasswordException.class)
           .hasMessageContaining("Current password is incorrect");
     }
 
     @Test
-    @DisplayName("changePassword when valid updates password and revokes all user sessions")
-    void changePassword_whenValid_updatesPasswordAndRevokesAllUserSessions() {
+    @DisplayName(
+        "changePassword when valid with access token blacklists token and revokes all sessions")
+    void changePassword_whenValidWithAccessToken_blacklistsTokenAndRevokesAllSessions() {
+      UUID userId = UUID.randomUUID();
+      User user = User.builder().id(userId).email(testEmail).passwordHash("current-hash").build();
+      when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+      when(passwordEncoder.matches("OldPass123@", "current-hash")).thenReturn(true);
+      when(passwordEncoder.encode("NewPass123@")).thenReturn("new-hash");
+
+      TokenPayload payload =
+          new TokenPayload(
+              userId,
+              testEmail,
+              "access-jti-123",
+              "ACCESS",
+              Instant.now(),
+              Instant.now().plusSeconds(900));
+      when(jwtService.parseAndValidateToken("my-token")).thenReturn(payload);
+      ChangePasswordRequest request =
+          new ChangePasswordRequest("OldPass123@", "NewPass123@", "NewPass123@");
+      authService.changePassword(userId, "Bearer my-token", request);
+
+      assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+      verify(userRepository).save(user);
+      verify(tokenRevocationService).blacklistAccessToken(eq("access-jti-123"), anyLong());
+      verify(tokenRevocationService).revokeAllUserSessions(userId);
+    }
+
+    @Test
+    @DisplayName("changePassword when access token is null only revokes all user sessions")
+    void changePassword_whenAccessTokenNull_onlyRevokesAllSessions() {
       UUID userId = UUID.randomUUID();
       User user = User.builder().id(userId).email(testEmail).passwordHash("current-hash").build();
       when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -691,10 +753,11 @@ class AuthServiceTest {
 
       ChangePasswordRequest request =
           new ChangePasswordRequest("OldPass123@", "NewPass123@", "NewPass123@");
-      authService.changePassword(userId, request);
+      authService.changePassword(userId, null, request);
 
       assertThat(user.getPasswordHash()).isEqualTo("new-hash");
       verify(userRepository).save(user);
+      verify(tokenRevocationService, never()).blacklistAccessToken(anyString(), anyLong());
       verify(tokenRevocationService).revokeAllUserSessions(userId);
     }
   }

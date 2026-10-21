@@ -53,28 +53,37 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional
   public void register(RegisterRequest request) {
-    if (userRepository.existsByEmail(request.email())) {
-      throw new DuplicateResourceException("Email already exists: " + request.email());
+    Optional<User> existingUserOpt = userRepository.findByEmail(request.email());
+    User user;
+    if (existingUserOpt.isPresent()) {
+      User existingUser = existingUserOpt.get();
+      if (existingUser.isEmailVerified()) {
+        throw new DuplicateResourceException("Email already exists: " + request.email());
+      }
+      existingUser.setFullName(request.fullName());
+      existingUser.setPasswordHash(passwordEncoder.encode(request.password()));
+      user = existingUser;
+      log.info("Re-registering unverified user for email: {}", request.email());
+    } else {
+      user =
+          User.builder()
+              .fullName(request.fullName())
+              .email(request.email())
+              .passwordHash(passwordEncoder.encode(request.password()))
+              .authProvider(AuthProvider.LOCAL)
+              .emailVerified(false)
+              .biometricEnabled(false)
+              .dailyReminderEnabled(true)
+              .currency("VND")
+              .language("vi")
+              .build();
     }
-
-    User user =
-        User.builder()
-            .fullName(request.fullName())
-            .email(request.email())
-            .passwordHash(passwordEncoder.encode(request.password()))
-            .authProvider(AuthProvider.LOCAL)
-            .emailVerified(false)
-            .biometricEnabled(false)
-            .dailyReminderEnabled(true)
-            .currency("VND")
-            .language("vi")
-            .build();
 
     userRepository.save(user);
 
     String otp = otpService.generateAndStoreOtp(request.email(), OtpType.REGISTER);
     emailService.sendRegistrationOtp(request.email(), request.fullName(), otp);
-    log.info("Registered unverified user and dispatched OTP to email: {}", request.email());
+    log.info("Registered user and dispatched OTP to email: {}", request.email());
   }
 
   @Override
@@ -288,7 +297,7 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   @Transactional
-  public void changePassword(UUID userId, ChangePasswordRequest request) {
+  public void changePassword(UUID userId, String accessToken, ChangePasswordRequest request) {
     if (!request.newPassword().equals(request.confirmPassword())) {
       throw new InvalidPasswordException("New password and confirmation password do not match");
     }
@@ -309,8 +318,30 @@ public class AuthServiceImpl implements AuthService {
     user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
     userRepository.save(user);
 
+    if (accessToken != null && !accessToken.isBlank()) {
+      String cleanToken =
+          accessToken.startsWith(BEARER_PREFIX)
+              ? accessToken.substring(BEARER_PREFIX.length())
+              : accessToken;
+      try {
+        TokenPayload accessPayload = jwtService.parseAndValidateToken(cleanToken);
+        if (accessPayload != null && accessPayload.jti() != null) {
+          long remainingMs =
+              accessPayload.expiresAt() != null
+                  ? Math.max(
+                      0L, accessPayload.expiresAt().toEpochMilli() - System.currentTimeMillis())
+                  : 0L;
+          tokenRevocationService.blacklistAccessToken(accessPayload.jti(), remainingMs);
+        }
+      } catch (Exception e) {
+        log.warn("Failed to blacklist access token during changePassword: {}", e.getMessage());
+      }
+    }
+
     tokenRevocationService.revokeAllUserSessions(userId);
-    log.info("Changed password and revoked all sessions for user: {}", userId);
+    log.info(
+        "Changed password, blacklisted current access token, and revoked all sessions for user: {}",
+        userId);
   }
 
   private AuthResponse generateAuthResponse(User user) {

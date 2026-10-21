@@ -105,9 +105,10 @@ public class AuthController extends AbstractBaseController {
 
   @PostMapping("/change-password")
   public ResponseEntity<SuccessResponse> changePassword(
+      @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
       @Valid @RequestBody ChangePasswordRequest request) {
     UUID userId = SecurityUtils.getCurrentUserId();
-    authService.changePassword(userId, request);
+    authService.changePassword(userId, authHeader, request);
     return success("Password changed successfully");
   }
 }
