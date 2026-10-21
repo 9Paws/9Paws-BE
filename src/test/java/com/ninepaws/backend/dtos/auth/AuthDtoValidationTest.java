@@ -2,7 +2,6 @@ package com.ninepaws.backend.dtos.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.ninepaws.backend.dtos.common.ApiResponse;
 import com.ninepaws.backend.enums.OtpType;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -213,7 +212,7 @@ class AuthDtoValidationTest {
   }
 
   @Nested
-  @DisplayName("Response DTOs and ApiResponse tests")
+  @DisplayName("Response DTOs tests")
   class ResponseDtoTests {
 
     @Test
@@ -246,27 +245,6 @@ class AuthDtoValidationTest {
           new VerifyResetPasswordOtpResponse("user@example.com", "reset-token-xyz");
       assertThat(response.email()).isEqualTo("user@example.com");
       assertThat(response.resetToken()).isEqualTo("reset-token-xyz");
-    }
-
-    @Test
-    void testApiResponseSuccess() {
-      ApiResponse<String> response = ApiResponse.success("Operation successful", "data-payload");
-      assertThat(response.success()).isTrue();
-      assertThat(response.message()).isEqualTo("Operation successful");
-      assertThat(response.data()).isEqualTo("data-payload");
-      assertThat(response.errors()).isNull();
-      assertThat(response.timestamp()).isBeforeOrEqualTo(Instant.now());
-    }
-
-    @Test
-    void testApiResponseError() {
-      Map<String, String> errors = Map.of("field", "must not be blank");
-      ApiResponse<Void> response = ApiResponse.error("Validation failed", errors);
-      assertThat(response.success()).isFalse();
-      assertThat(response.message()).isEqualTo("Validation failed");
-      assertThat(response.data()).isNull();
-      assertThat(response.errors()).isEqualTo(errors);
-      assertThat(response.timestamp()).isBeforeOrEqualTo(Instant.now());
     }
   }
 }
