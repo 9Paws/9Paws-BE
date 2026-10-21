@@ -91,7 +91,10 @@ public class GlobalExceptionHandler {
     log.warn("Validation failed at: {}", request.getRequestURI());
     Map<String, List<String>> errors = new HashMap<>();
 
-    BindingResult bindingResult = (e instanceof BindException be) ? be.getBindingResult() : null;
+    BindingResult bindingResult =
+        (e instanceof MethodArgumentNotValidException manve)
+            ? manve.getBindingResult()
+            : (e instanceof BindException be) ? be.getBindingResult() : null;
 
     if (bindingResult != null) {
       for (FieldError fieldError : bindingResult.getFieldErrors()) {
@@ -182,7 +185,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
       DataIntegrityViolationException e, HttpServletRequest request) {
-    log.error("Database conflict at {}: {}", request.getRequestURI(), e.getMessage());
+    log.warn("Database conflict at {}: {}", request.getRequestURI(), e.getMessage());
     return buildFromAppErrorCode(
         WebErrorCode.BAD_REQUEST, request.getRequestURI(), "Data integrity violation or conflict");
   }
@@ -262,7 +265,7 @@ public class GlobalExceptionHandler {
     return buildFromAppErrorCode(
         WebErrorCode.BAD_REQUEST,
         request.getRequestURI(),
-        "Invalid request: " + e.getClass().getSimpleName());
+        "Invalid request: Malformed or missing parameter");
   }
 
   // 8. Catch-all: Unexpected Unhandled Exceptions

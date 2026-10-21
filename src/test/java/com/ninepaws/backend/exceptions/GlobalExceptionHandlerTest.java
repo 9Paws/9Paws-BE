@@ -94,6 +94,17 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
+  @DisplayName("handleValidationException handles non-BindException gracefully")
+  void whenValidationExceptionWithoutBindingResult_returnsValidationResponse() {
+    Exception ex = new Exception("Generic validation issue");
+    ResponseEntity<DetailedErrorResponse> response = handler.handleValidationException(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getErrorCode()).isEqualTo("WEB_400_VAL");
+  }
+
+  @Test
   @DisplayName("ConstraintViolationException returns DetailedErrorResponse")
   void whenConstraintViolationException_returnsDetailedErrorResponse() {
     ConstraintViolation<?> violation = mock(ConstraintViolation.class);
