@@ -1,0 +1,16 @@
+# .dockerignore
+.git
+.github
+.idea
+.vscode
+.agent
+.env
+.env.example
+docs
+target
+logs
+*.iml
+*.iws
+*.ipr
+HELP.md
+docker-compose*.yml
