@@ -31,20 +31,30 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+  private final CustomAccessDeniedHandler accessDeniedHandler;
   private final String allowedOrigins;
 
   @Autowired
   public SecurityConfig(
       JwtAuthenticationFilter jwtAuthenticationFilter,
-      @Value("${app.cors.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*}") String allowedOrigins) {
+      CustomAuthenticationEntryPoint authenticationEntryPoint,
+      CustomAccessDeniedHandler accessDeniedHandler,
+      @Value("${app.cors.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*}")
+          String allowedOrigins) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    this.authenticationEntryPoint = authenticationEntryPoint;
+    this.accessDeniedHandler = accessDeniedHandler;
     this.allowedOrigins = allowedOrigins;
   }
 
   public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-    this(jwtAuthenticationFilter, "http://localhost:*,http://127.0.0.1:*");
+    this(jwtAuthenticationFilter, null, null, "http://localhost:*,http://127.0.0.1:*");
   }
 
+  public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, String allowedOrigins) {
+    this(jwtAuthenticationFilter, null, null, allowedOrigins);
+  }
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder(12);
@@ -64,17 +74,14 @@ public class SecurityConfig {
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .exceptionHandling(
-            exceptions ->
-                exceptions.authenticationEntryPoint(
-                    (request, response, authException) -> {
-                      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                      response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                      response.setCharacterEncoding("UTF-8");
-                      response.getWriter().write(
-                          """
-                          {"success":false,"message":"Unauthorized","data":null,"errors":null,"timestamp":"%s"}
-                          """.formatted(Instant.now()).trim());
-                    }))
+            exceptions -> {
+              if (authenticationEntryPoint != null) {
+                exceptions.authenticationEntryPoint(authenticationEntryPoint);
+              }
+              if (accessDeniedHandler != null) {
+                exceptions.accessDeniedHandler(accessDeniedHandler);
+              }
+            })
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
