@@ -9,10 +9,7 @@ services:
       redis:
         condition: service_healthy
     env_file:
-      - path: /opt/ninepaws/.env
-        required: false
-      - path: .env
-        required: false
+      - /opt/ninepaws/.env
     networks:
       - internal_net
     deploy:
@@ -84,7 +81,7 @@ services:
           memory: 64M
 
   certbot:
-    image: certbot/certbot:latest
+    image: certbot/certbot:v2.11.0
     container_name: ninepaws-certbot
     restart: unless-stopped
     volumes:

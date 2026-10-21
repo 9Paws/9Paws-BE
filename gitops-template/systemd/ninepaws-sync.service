@@ -9,3 +9,4 @@ User=root
 ExecStart=/opt/ninepaws/9Paws-Gitops/scripts/sync.sh
 StandardOutput=journal
 StandardError=journal
+TimeoutStartSec=300
