@@ -93,6 +93,8 @@ public class SecurityConfig {
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
+                        "/docs",
+                        "/docs/**",
                         "/actuator/health",
                         "/api/v1/public/split-bills/*",
                         "/api/v1/public/**")
