@@ -4,177 +4,212 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.ninepaws.backend.dtos.common.ApiResponse;
+import com.ninepaws.backend.dtos.response.ResponseFactory;
+import com.ninepaws.backend.dtos.response.base.DetailedErrorResponse;
+import com.ninepaws.backend.dtos.response.base.ErrorResponse;
+import com.ninepaws.backend.exceptions.error.AuthErrorCode;
+import com.ninepaws.backend.exceptions.error.SystemErrorCode;
+import com.ninepaws.backend.exceptions.error.UserErrorCode;
+import com.ninepaws.backend.exceptions.error.WebErrorCode;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 class GlobalExceptionHandlerTest {
 
   private GlobalExceptionHandler handler;
+  private MockHttpServletRequest request;
 
   @BeforeEach
   void setUp() {
-    handler = new GlobalExceptionHandler();
+    ResponseFactory responseFactory = new ResponseFactory();
+    handler = new GlobalExceptionHandler(responseFactory);
+    request = new MockHttpServletRequest();
+    request.setRequestURI("/api/v1/test");
   }
 
   @Test
-  @DisplayName("MethodArgumentNotValidException returns 400 with field errors map")
-  void whenMethodArgumentNotValidException_returns400WithErrorsMap() {
-    MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
+  @DisplayName("BaseAppException returns ErrorResponse with domain error code and HTTP status")
+  void whenBaseAppException_returnsErrorResponse() {
+    BaseAppException ex = new BaseAppException(UserErrorCode.USER_NOT_FOUND, "User 123 not found");
+
+    ResponseEntity<ErrorResponse> response = handler.handleBaseAppException(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getHttpStatus()).isEqualTo(404);
+    assertThat(response.getBody().getErrorCode()).isEqualTo("USER_101");
+    assertThat(response.getBody().getMessage()).isEqualTo("User 123 not found");
+    assertThat(response.getBody().getPath()).isEqualTo("/api/v1/test");
+    assertThat(response.getBody().getTimestamp()).isNotNull();
+  }
+
+  @Test
+  @DisplayName("MethodArgumentNotValidException returns DetailedErrorResponse with grouped errors")
+  void whenMethodArgumentNotValidException_returnsDetailedErrorResponse() {
     BindingResult bindingResult = mock(BindingResult.class);
-    FieldError fieldError = new FieldError("userDto", "email", "must be a well-formed email address");
+    FieldError error1 = new FieldError("object", "email", "must not be blank");
+    FieldError error2 = new FieldError("object", "email", "must be a well-formed email address");
+    FieldError error3 = new FieldError("object", "password", "must be at least 8 characters");
+    ObjectError globalError = new ObjectError("dateRange", "End date must be after start date");
 
-    when(ex.getBindingResult()).thenReturn(bindingResult);
-    when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
+    when(bindingResult.getFieldErrors()).thenReturn(List.of(error1, error2, error3));
+    when(bindingResult.getGlobalErrors()).thenReturn(List.of(globalError));
 
-    ResponseEntity<ApiResponse<Void>> res = handler.handleValidationExceptions(ex);
+    MethodArgumentNotValidException ex =
+        new MethodArgumentNotValidException(mock(MethodParameter.class), bindingResult);
 
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().errors()).isNotNull();
-    assertThat(res.getBody().errors()).containsEntry("email", "must be a well-formed email address");
+    ResponseEntity<DetailedErrorResponse> response = handler.handleValidationException(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getHttpStatus()).isEqualTo(400);
+    assertThat(response.getBody().getErrorCode()).isEqualTo("WEB_400_VAL");
+    assertThat(response.getBody().getItems()).hasSize(3);
+    assertThat(response.getBody().getItems().get("email"))
+        .containsExactly("must not be blank", "must be a well-formed email address");
+    assertThat(response.getBody().getItems().get("password"))
+        .containsExactly("must be at least 8 characters");
+    assertThat(response.getBody().getItems().get("dateRange"))
+        .containsExactly("End date must be after start date");
   }
 
   @Test
-  @DisplayName("InvalidOtpException returns 400 with error message")
-  void whenInvalidOtpException_returns400WithErrorMessage() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleInvalidOtpException(new InvalidOtpException("Mã OTP không chính xác"));
+  @DisplayName("ConstraintViolationException returns DetailedErrorResponse")
+  void whenConstraintViolationException_returnsDetailedErrorResponse() {
+    ConstraintViolation<?> violation = mock(ConstraintViolation.class);
+    Path path = mock(Path.class);
+    when(path.toString()).thenReturn("pageNumber");
+    when(violation.getPropertyPath()).thenReturn(path);
+    when(violation.getMessage()).thenReturn("must be greater than or equal to 0");
 
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Mã OTP không chính xác");
+    ConstraintViolationException ex = new ConstraintViolationException(Set.of(violation));
+
+    ResponseEntity<DetailedErrorResponse> response =
+        handler.handleConstraintViolation(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getErrorCode()).isEqualTo("WEB_400_VAL");
+    assertThat(response.getBody().getItems().get("pageNumber"))
+        .containsExactly("must be greater than or equal to 0");
   }
 
   @Test
-  @DisplayName("RateLimitException returns 429")
-  void whenRateLimitException_returns429() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleRateLimitException(new RateLimitException("Vui lòng đợi 60 giây"));
+  @DisplayName("EntityNotFoundException returns 404 ErrorResponse")
+  void whenEntityNotFoundException_returns404() {
+    EntityNotFoundException ex = new EntityNotFoundException("User entity missing");
 
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Vui lòng đợi 60 giây");
+    ResponseEntity<ErrorResponse> response = handler.handleEntityNotFound(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getErrorCode()).isEqualTo(WebErrorCode.NOT_FOUND.getErrorCode());
   }
 
   @Test
-  @DisplayName("ResourceNotFoundException returns 404")
-  void whenResourceNotFoundException_returns404() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleResourceNotFoundException(new ResourceNotFoundException("User not found"));
+  @DisplayName("DataIntegrityViolationException returns 400 ErrorResponse")
+  void whenDataIntegrityViolationException_returns400() {
+    DataIntegrityViolationException ex =
+        new DataIntegrityViolationException("Unique index violation");
 
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("User not found");
+    ResponseEntity<ErrorResponse> response = handler.handleDataIntegrityViolation(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getErrorCode())
+        .isEqualTo(WebErrorCode.BAD_REQUEST.getErrorCode());
   }
 
   @Test
-  @DisplayName("DuplicateResourceException returns 409")
-  void whenDuplicateResourceException_returns409() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleDuplicateResourceException(new DuplicateResourceException("Email already exists"));
-
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Email already exists");
-  }
-
-  @Test
-  @DisplayName("TokenRevokedException returns 401")
-  void whenTokenRevokedException_returns401() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleTokenRevokedException(new TokenRevokedException("Token has been revoked"));
-
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Token has been revoked");
-  }
-
-  @Test
-  @DisplayName("AccountNotVerifiedException returns 403")
-  void whenAccountNotVerifiedException_returns403() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleAccountNotVerifiedException(new AccountNotVerifiedException("Account is not verified"));
-
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Account is not verified");
-  }
-
-  @Test
-  @DisplayName("InvalidPasswordException returns 400")
-  void whenInvalidPasswordException_returns400() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleInvalidPasswordException(new InvalidPasswordException("Mật khẩu cũ không chính xác"));
-
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Mật khẩu cũ không chính xác");
-  }
-
-  @Test
-  @DisplayName("BadCredentialsException returns 401")
+  @DisplayName("BadCredentialsException returns 401 ErrorResponse")
   void whenBadCredentialsException_returns401() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleBadCredentialsException(new BadCredentialsException("Invalid username or password"));
+    BadCredentialsException ex = new BadCredentialsException("Bad credentials");
 
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Invalid username or password");
+    ResponseEntity<ErrorResponse> response = handler.handleBadCredentials(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getErrorCode())
+        .isEqualTo(WebErrorCode.UNAUTHORIZED.getErrorCode());
   }
 
   @Test
-  @DisplayName("AccessDeniedException returns 403")
+  @DisplayName("InsufficientAuthenticationException returns 401 ErrorResponse")
+  void whenInsufficientAuthentication_returns401() {
+    InsufficientAuthenticationException ex =
+        new InsufficientAuthenticationException("Token required");
+
+    ResponseEntity<ErrorResponse> response = handler.handleInsufficientAuth(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThat(response.getBody()).isNotNull();
+  }
+
+  @Test
+  @DisplayName("AccessDeniedException returns 403 ErrorResponse")
   void whenAccessDeniedException_returns403() {
-    ResponseEntity<ApiResponse<Void>> res =
-        handler.handleAccessDeniedException(new AccessDeniedException("Access denied"));
+    AccessDeniedException ex = new AccessDeniedException("Forbidden action");
 
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Access denied");
+    ResponseEntity<ErrorResponse> response = handler.handleAccessDenied(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getErrorCode()).isEqualTo(WebErrorCode.FORBIDDEN.getErrorCode());
   }
 
   @Test
-  @DisplayName("Generic AppException returns mapped HttpStatus")
-  void whenAppException_returnsMappedHttpStatus() {
-    AppException ex = new AppException("Custom error", HttpStatus.PAYMENT_REQUIRED);
-    ResponseEntity<ApiResponse<Void>> res = handler.handleAppException(ex);
+  @DisplayName("Transport exceptions return appropriate error response")
+  void whenTransportException_returnsAppropriateErrorResponse() {
+    HttpRequestMethodNotSupportedException methodEx =
+        new HttpRequestMethodNotSupportedException("POST");
+    ResponseEntity<ErrorResponse> methodRes = handler.handleMethodNotAllowed(methodEx, request);
+    assertThat(methodRes.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
 
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.PAYMENT_REQUIRED);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).isEqualTo("Custom error");
+    NoResourceFoundException notFoundEx =
+        new NoResourceFoundException(
+            org.springframework.http.HttpMethod.GET, "/static/file.css", "Resource not found");
+    ResponseEntity<ErrorResponse> notFoundRes = handler.handleNoResourceFound(notFoundEx, request);
+    assertThat(notFoundRes.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
   }
 
   @Test
-  @DisplayName("Generic Exception returns 500 without leaking raw message")
+  @DisplayName("Generic Exception returns 500 with safe SystemErrorCode")
   void whenGenericException_returns500WithSafeMessage() {
-    Exception ex = new RuntimeException("DB Connection failed with sensitive details");
-    ResponseEntity<ApiResponse<Void>> res = handler.handleGenericException(ex);
+    Exception ex = new RuntimeException("DB credentials leaked in sensitive message");
 
-    assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-    assertThat(res.getBody()).isNotNull();
-    assertThat(res.getBody().success()).isFalse();
-    assertThat(res.getBody().message()).doesNotContain("sensitive details");
-    assertThat(res.getBody().message()).isEqualTo("An internal server error occurred");
+    ResponseEntity<ErrorResponse> response = handler.handleUnknownException(ex, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().getErrorCode())
+        .isEqualTo(SystemErrorCode.INTERNAL_SERVER_ERROR.getErrorCode());
+    assertThat(response.getBody().getMessage())
+        .isEqualTo(SystemErrorCode.INTERNAL_SERVER_ERROR.getMessage());
+    assertThat(response.getBody().getMessage()).doesNotContain("DB credentials");
   }
 }
