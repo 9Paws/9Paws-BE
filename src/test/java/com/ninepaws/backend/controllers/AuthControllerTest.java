@@ -30,7 +30,6 @@ import com.ninepaws.backend.exceptions.InvalidOtpException;
 import com.ninepaws.backend.exceptions.RateLimitException;
 import com.ninepaws.backend.security.UserPrincipal;
 import com.ninepaws.backend.services.AuthService;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -110,7 +109,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isCreated())
-          .andExpect(jsonPath("$.success").value(true))
+          .andExpect(jsonPath("$.httpStatus").value(201))
           .andExpect(jsonPath("$.message").isNotEmpty());
 
       verify(authService).register(any(RegisterRequest.class));
@@ -130,7 +129,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isConflict())
-          .andExpect(jsonPath("$.success").value(false))
+          .andExpect(jsonPath("$.httpStatus").value(409))
+          .andExpect(jsonPath("$.errorCode").value("USER_102"))
           .andExpect(jsonPath("$.message").value("Email already exists"));
     }
 
@@ -145,8 +145,9 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(invalidReq)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false))
-          .andExpect(jsonPath("$.errors").isMap());
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("WEB_400_VAL"))
+          .andExpect(jsonPath("$.items").isMap());
     }
   }
 
@@ -174,7 +175,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true))
+          .andExpect(jsonPath("$.httpStatus").value(200))
           .andExpect(jsonPath("$.data.accessToken").value("access-token"))
           .andExpect(jsonPath("$.data.refreshToken").value("refresh-token"))
           .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
@@ -196,7 +197,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false))
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("AUTH_102"))
           .andExpect(jsonPath("$.message").value("Invalid or expired OTP"));
     }
 
@@ -211,7 +213,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false));
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("WEB_400_VAL"));
     }
   }
 
@@ -230,7 +233,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true));
+          .andExpect(jsonPath("$.httpStatus").value(200));
 
       verify(authService).resendOtp(any(ResendOtpRequest.class));
     }
@@ -249,7 +252,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isTooManyRequests())
-          .andExpect(jsonPath("$.success").value(false))
+          .andExpect(jsonPath("$.httpStatus").value(429))
+          .andExpect(jsonPath("$.errorCode").value("AUTH_106"))
           .andExpect(jsonPath("$.message").value("Please wait before requesting another OTP"));
     }
 
@@ -262,7 +266,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content("{\"email\":\"test@ninepaws.com\"}"))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false));
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("WEB_400_VAL"));
     }
   }
 
@@ -291,7 +296,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true))
+          .andExpect(jsonPath("$.httpStatus").value(200))
           .andExpect(jsonPath("$.data.accessToken").value("access-token"))
           .andExpect(jsonPath("$.data.refreshToken").value("refresh-token"));
 
@@ -311,7 +316,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isUnauthorized())
-          .andExpect(jsonPath("$.success").value(false))
+          .andExpect(jsonPath("$.httpStatus").value(401))
+          .andExpect(jsonPath("$.errorCode").value("WEB_401"))
           .andExpect(jsonPath("$.message").value("Invalid email or password"));
     }
 
@@ -326,7 +332,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false));
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("WEB_400_VAL"));
     }
   }
 
@@ -354,7 +361,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true))
+          .andExpect(jsonPath("$.httpStatus").value(200))
           .andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
           .andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"));
 
@@ -372,7 +379,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false));
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("WEB_400_VAL"));
     }
   }
 
@@ -392,7 +400,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true));
+          .andExpect(jsonPath("$.httpStatus").value(200));
 
       verify(authService).logout(eq("Bearer my-access-token"), eq("my-refresh-token"));
     }
@@ -405,7 +413,7 @@ class AuthControllerTest {
               post("/api/v1/auth/logout")
                   .header(HttpHeaders.AUTHORIZATION, "Bearer my-access-token"))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true));
+          .andExpect(jsonPath("$.httpStatus").value(200));
 
       verify(authService).logout(eq("Bearer my-access-token"), isNull());
     }
@@ -426,7 +434,7 @@ class AuthControllerTest {
               post("/api/v1/auth/logout-all")
                   .header(HttpHeaders.AUTHORIZATION, "Bearer my-access-token"))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true));
+          .andExpect(jsonPath("$.httpStatus").value(200));
 
       verify(authService).logoutAll(eq(userId), eq("Bearer my-access-token"));
     }
@@ -447,7 +455,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true));
+          .andExpect(jsonPath("$.httpStatus").value(200));
 
       verify(authService).forgotPassword(any(ForgotPasswordRequest.class));
     }
@@ -463,7 +471,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false));
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("WEB_400_VAL"));
     }
   }
 
@@ -485,7 +494,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true))
+          .andExpect(jsonPath("$.httpStatus").value(200))
           .andExpect(jsonPath("$.data.email").value("test@ninepaws.com"))
           .andExpect(jsonPath("$.data.resetToken").value("reset-token-uuid"));
 
@@ -505,7 +514,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false))
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("AUTH_102"))
           .andExpect(jsonPath("$.message").value("Invalid or expired OTP"));
     }
   }
@@ -526,7 +536,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true));
+          .andExpect(jsonPath("$.httpStatus").value(200));
 
       verify(authService).resetPassword(any(ResetPasswordRequest.class));
     }
@@ -543,7 +553,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false));
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("WEB_400_VAL"));
     }
   }
 
@@ -567,7 +578,7 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.success").value(true));
+          .andExpect(jsonPath("$.httpStatus").value(200));
 
       verify(authService).changePassword(eq(userId), any(ChangePasswordRequest.class));
     }
@@ -588,7 +599,8 @@ class AuthControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.success").value(false));
+          .andExpect(jsonPath("$.httpStatus").value(400))
+          .andExpect(jsonPath("$.errorCode").value("WEB_400_VAL"));
     }
   }
 }

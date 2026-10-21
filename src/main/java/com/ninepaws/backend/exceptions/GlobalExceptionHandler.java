@@ -43,6 +43,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
+@RestControllerAdvice
 @RequiredArgsConstructor
 @Slf4j
 public class GlobalExceptionHandler {
@@ -192,8 +193,11 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleBadCredentials(
       BadCredentialsException e, HttpServletRequest request) {
     log.warn("Bad credentials at: {}", request.getRequestURI());
-    return buildFromAppErrorCode(
-        WebErrorCode.UNAUTHORIZED, request.getRequestURI(), "Invalid username or password");
+    String message =
+        (e.getMessage() != null && !e.getMessage().isBlank())
+            ? e.getMessage()
+            : "Invalid email or password";
+    return buildFromAppErrorCode(WebErrorCode.UNAUTHORIZED, request.getRequestURI(), message);
   }
 
   @ExceptionHandler(InsufficientAuthenticationException.class)

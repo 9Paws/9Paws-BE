@@ -168,7 +168,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerRequest)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.httpStatus").value(201))
         .andExpect(
             jsonPath("$.message")
                 .value("User registered successfully. Please verify your email with the OTP sent."));
@@ -219,7 +219,7 @@ class AuthIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(verifyOtpRequest)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.httpStatus").value(200))
             .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
             .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
             .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
@@ -261,7 +261,7 @@ class AuthIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(loginRequest)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.httpStatus").value(200))
             .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
             .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
             .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
@@ -292,7 +292,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(badPasswordRequest)))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.httpStatus").value(401))
         .andExpect(jsonPath("$.message").value("Invalid email or password"));
   }
 
@@ -333,7 +333,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(changePasswordRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.httpStatus").value(200))
         .andExpect(jsonPath("$.message").value("Password changed successfully"));
 
     // Verify password was actually updated in database
@@ -362,8 +362,8 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.success").value(false))
-        .andExpect(jsonPath("$.message").value("Unauthorized"));
+        .andExpect(jsonPath("$.httpStatus").value(401))
+        .andExpect(jsonPath("$.errorCode").value("WEB_401"));
 
     // 5b. Request with forged token -> 401 Unauthorized
     mockMvc
@@ -373,8 +373,8 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.success").value(false))
-        .andExpect(jsonPath("$.message").value("Unauthorized"));
+        .andExpect(jsonPath("$.httpStatus").value(401))
+        .andExpect(jsonPath("$.errorCode").value("WEB_401"));
 
     // 5c. Request with expired token -> 401 Unauthorized
     String expiredToken =
@@ -395,8 +395,8 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.success").value(false))
-        .andExpect(jsonPath("$.message").value("Unauthorized"));
+        .andExpect(jsonPath("$.httpStatus").value(401))
+        .andExpect(jsonPath("$.errorCode").value("WEB_401"));
 
     // 5d. Request using REFRESH token as Bearer token -> 401 Unauthorized
     String refreshToken =
@@ -409,8 +409,8 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.success").value(false))
-        .andExpect(jsonPath("$.message").value("Unauthorized"));
+        .andExpect(jsonPath("$.httpStatus").value(401))
+        .andExpect(jsonPath("$.errorCode").value("WEB_401"));
   }
 
   // =========================================================================
@@ -451,7 +451,7 @@ class AuthIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(refreshRequest)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.httpStatus").value(200))
             .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
             .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
             .andReturn();
@@ -477,7 +477,8 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new RefreshTokenRequest(oldRefreshToken))))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.httpStatus").value(401))
+        .andExpect(jsonPath("$.errorCode").value("AUTH_104"))
         .andExpect(jsonPath("$.message").value("Refresh token is revoked or invalid"));
 
     // Verify new access token works for protected endpoints
@@ -490,7 +491,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(changePasswordRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.success").value(true));
+        .andExpect(jsonPath("$.httpStatus").value(200));
   }
 
   // =========================================================================
@@ -534,7 +535,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(logoutRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.httpStatus").value(200))
         .andExpect(jsonPath("$.message").value("Logged out successfully"));
 
     // Verify access token JTI is now blacklisted in Redis
@@ -551,8 +552,8 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(changePasswordRequest)))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.success").value(false))
-        .andExpect(jsonPath("$.message").value("Unauthorized"));
+        .andExpect(jsonPath("$.httpStatus").value(401))
+        .andExpect(jsonPath("$.errorCode").value("WEB_401"));
 
     // Repeated logout with the blacklisted access token also gives 401
     mockMvc
@@ -582,7 +583,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(forgotRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.httpStatus").value(200))
         .andExpect(
             jsonPath("$.message")
                 .value("Password reset OTP sent to email if account exists"));
@@ -602,7 +603,7 @@ class AuthIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(verifyOtpRequest)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.httpStatus").value(200))
             .andExpect(jsonPath("$.data.email").value(EMAIL_SCENARIO_8))
             .andExpect(jsonPath("$.data.resetToken").isNotEmpty())
             .andReturn();
@@ -626,7 +627,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(resetRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.httpStatus").value(200))
         .andExpect(
             jsonPath("$.message")
                 .value("Password reset successfully. Please login with your new password."));
@@ -639,7 +640,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(oldLoginRequest)))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.httpStatus").value(401))
         .andExpect(jsonPath("$.message").value("Invalid email or password"));
 
     // 8e. New password login must succeed with 200 OK
@@ -650,7 +651,7 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newLoginRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.httpStatus").value(200))
         .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
         .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
         .andExpect(jsonPath("$.data.user.email").value(EMAIL_SCENARIO_8));
@@ -681,7 +682,8 @@ class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(earlyLoginRequest)))
         .andExpect(status().isForbidden())
-        .andExpect(jsonPath("$.success").value(false))
+        .andExpect(jsonPath("$.httpStatus").value(403))
+        .andExpect(jsonPath("$.errorCode").value("AUTH_103"))
         .andExpect(
             jsonPath("$.message")
                 .value("Account is not verified. Please verify your email via OTP before logging in."));
@@ -851,6 +853,6 @@ class AuthIntegrationTest {
                     objectMapper.writeValueAsString(
                         new LoginRequest(EMAIL_E2E, RESET_PASSWORD))))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.success").value(true));
+        .andExpect(jsonPath("$.httpStatus").value(200));
   }
 }
