@@ -14,6 +14,48 @@ jobs:
   test:
     name: Run Unit & Integration Tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: ninepaws_db
+          POSTGRES_USER: ninepaws_user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:8-alpine
+        command: redis-server --requirepass redis_password
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli -a redis_password ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ninepaws_db
+      POSTGRES_USER: ninepaws_user
+      POSTGRES_PASSWORD: password
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+      JWT_SECRET: dGVzdC1zZWNyZXQta2V5LWF0LWxlYXN0LTMyLWJ5dGVzLWxvbmctMTIzNDU2Nzg5MA==
+      JWT_ACCESS_EXPIRATION: 86400000
+      JWT_REFRESH_EXPIRATION: 604800000
+      CLOUDINARY_CLOUD_NAME: dummy
+      CLOUDINARY_API_KEY: dummy
+      CLOUDINARY_API_SECRET: dummy
+      SPRING_AI_GOOGLE_GENAI_API_KEY: dummy
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
