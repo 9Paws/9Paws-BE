@@ -21,7 +21,12 @@ public class ScalarDocsController {
   }
 
   @GetMapping(
-      value = {"${app.scalar.path:/docs}", "${app.scalar.path:/docs}/"},
+      value = {
+        "${app.scalar.path:/docs}",
+        "${app.scalar.path:/docs}/",
+        "/scalar",
+        "/scalar/"
+      },
       produces = MediaType.TEXT_HTML_VALUE)
   @ResponseBody
   public ResponseEntity<String> renderScalarDocs() {

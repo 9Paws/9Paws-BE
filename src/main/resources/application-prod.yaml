@@ -89,7 +89,9 @@ app:
     api-secret: ${CLOUDINARY_API_SECRET}
 
   scalar:
-    enabled: false
+    path: ${SCALAR_PATH:/docs}
+    url: ${SCALAR_URL:/v3/api-docs}
+    enabled: ${SCALAR_ENABLED:true}
 
   backend:
     ip: ${BACKEND_IP:127.0.0.1}
