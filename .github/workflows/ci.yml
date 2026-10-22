@@ -97,6 +97,8 @@ jobs:
           chmod +x ./mvnw
           VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${OWNER_LC}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "tag=v${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
 
@@ -117,8 +119,8 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/ninepaws-backend:${{ steps.meta.outputs.tag }}
-            ghcr.io/${{ github.repository_owner }}/ninepaws-backend:latest
+            ghcr.io/${{ steps.meta.outputs.owner }}/ninepaws-backend:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/ninepaws-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -136,7 +138,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase origin main --quiet
           
-          IMAGE_LINE="image: ghcr.io/${{ github.repository_owner }}/ninepaws-backend:${{ steps.meta.outputs.tag }}"
+          IMAGE_LINE="image: ghcr.io/${{ steps.meta.outputs.owner }}/ninepaws-backend:${{ steps.meta.outputs.tag }}"
           sed -i -E "s|image: ghcr.io/[^/]+/ninepaws-backend:.*|${IMAGE_LINE}|g" docker-compose-prod.yml
           
           git add docker-compose-prod.yml
