@@ -26,7 +26,9 @@ jobs:
           cache: maven
 
       - name: Run Maven Tests
-        run: ./mvnw clean test -B
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean test -B
 
   build-and-deploy:
     name: Build Image & Propagate to GitOps
@@ -50,6 +52,7 @@ jobs:
       - name: Extract Project Version & Short SHA
         id: meta
         run: |
+          chmod +x ./mvnw
           VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
