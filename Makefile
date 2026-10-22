@@ -10,7 +10,7 @@ down:
 
 # Xem logs của các container
 logs:
-	docker-compose -f docker/docker-compose.yml logs -f
+	docker-compose -f docker/docker-compose.yml --env-file .env logs -f
 
 # Format code chuẩn Google Java Format (thông qua Spotless plugin)
 format:

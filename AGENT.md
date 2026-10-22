@@ -64,7 +64,7 @@ Always use the Maven Wrapper (`./mvnw`) or `Makefile` from the project root:
 ./mvnw verify
 
 # Start local infrastructure (PostgreSQL, Redis) via Docker Compose
-docker compose -f docker/docker-compose.yml up -d
+docker compose -f docker/docker-compose.yml --env-file .env up -d
 
 # Run Spring Boot application locally (dev profile)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
