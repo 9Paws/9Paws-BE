@@ -14,27 +14,17 @@ echo "=== Initializing SSL for $DOMAIN ==="
 # 1. Substitute DOMAIN_NAME in app.conf
 sed -i "s|\${DOMAIN_NAME}|$DOMAIN|g" "$GITOPS_DIR/nginx/conf.d/app.conf"
 
-# 2. Generate dummy certificate inside certbot volume so Nginx can start
-echo "Creating initial certificate placeholder inside certbot_conf volume..."
-docker compose --env-file /opt/ninepaws/.env -f "$GITOPS_DIR/docker-compose-prod.yml" run --rm --entrypoint "" certbot sh -c "
-    mkdir -p /etc/letsencrypt/live/${DOMAIN} && \
-    if [ ! -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem ]; then
-        openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-            -keyout /etc/letsencrypt/live/${DOMAIN}/privkey.pem \
-            -out /etc/letsencrypt/live/${DOMAIN}/fullchain.pem \
-            -subj '/CN=localhost'
-    fi
-"
-# 3. Start Nginx
+# 2. Stop any container using port 80 temporarily
 cd "$GITOPS_DIR"
-docker compose --env-file /opt/ninepaws/.env -f docker-compose-prod.yml up -d nginx
+docker compose -f docker-compose-prod.yml stop nginx 2>/dev/null || true
 
-# 4. Request genuine certificate via Certbot
-docker compose --env-file /opt/ninepaws/.env -f docker-compose-prod.yml run --rm certbot certonly \
-    --webroot --webroot-path=/var/www/certbot \
+# 3. Request genuine certificate via standalone Certbot container
+echo "Requesting genuine SSL certificate from Let's Encrypt via standalone Certbot..."
+docker run --rm -p 80:80 \
+    -v 9paws-gitops_certbot_conf:/etc/letsencrypt \
+    -v 9paws-gitops_certbot_www:/var/www/certbot \
+    certbot/certbot:v2.11.0 certonly --standalone \
     --email "$EMAIL" --agree-tos --no-eff-email \
-    -d "$DOMAIN" --force-renewal
+    -d "$DOMAIN" --non-interactive --force-renewal
 
-# 5. Reload Nginx with genuine certificate
-docker compose --env-file /opt/ninepaws/.env -f docker-compose-prod.yml exec nginx nginx -s reload
 echo "=== SSL Initialization Successful for $DOMAIN ==="
