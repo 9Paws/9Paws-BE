@@ -5,20 +5,15 @@ COPY pom.xml ./
 RUN mvn dependency:resolve -B
 COPY src ./src
 RUN mvn clean package -DskipTests -B
-RUN java -Djarmode=layertools -jar target/*.jar extract
 
 # STAGE 2: RUNTIME
 FROM eclipse-temurin:25-jre AS runtime
 RUN groupadd --system appgroup && \
     useradd --system --gid appgroup appuser
 WORKDIR /app
-COPY --from=builder /app/dependencies/ ./
-COPY --from=builder /app/spring-boot-loader/ ./
-COPY --from=builder /app/snapshot-dependencies/ ./
-COPY --from=builder /app/application/ ./
+COPY --from=builder /app/target/*.jar /app/app.jar
 RUN chown -R appuser:appgroup /app
 ENV JAVA_TOOL_OPTIONS="-XX:InitialRAMPercentage=25.0 -XX:MaxRAMPercentage=75.0 -Xmx450m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
 USER appuser
 EXPOSE 8080
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
-
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
