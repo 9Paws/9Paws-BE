@@ -53,5 +53,4 @@ run_output.txt
 *-firebase-adminsdk-*.json
 
 # Documentation (local notes, ERD, and reuse architecture docs)
-docs/*
-!docs/reuse/
+docs/
