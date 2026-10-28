@@ -10,6 +10,7 @@ import com.ninepaws.backend.dtos.auth.ResendOtpRequest;
 import com.ninepaws.backend.dtos.auth.ResetPasswordRequest;
 import com.ninepaws.backend.dtos.auth.UserResponse;
 import com.ninepaws.backend.dtos.auth.VerifyOtpRequest;
+import com.ninepaws.backend.dtos.auth.GoogleLoginRequest;
 import com.ninepaws.backend.dtos.auth.VerifyResetPasswordOtpResponse;
 import com.ninepaws.backend.entities.User;
 import com.ninepaws.backend.enums.AuthProvider;
@@ -20,6 +21,10 @@ import com.ninepaws.backend.exceptions.InvalidOtpException;
 import com.ninepaws.backend.exceptions.InvalidPasswordException;
 import com.ninepaws.backend.exceptions.ResourceNotFoundException;
 import com.ninepaws.backend.exceptions.TokenRevokedException;
+import com.ninepaws.backend.exceptions.BaseAppException;
+import com.ninepaws.backend.exceptions.error.AuthErrorCode;
+import com.ninepaws.backend.security.oauth.GoogleTokenPayload;
+import com.ninepaws.backend.security.oauth.GoogleTokenVerifier;
 import com.ninepaws.backend.repositories.UserRepository;
 import com.ninepaws.backend.security.JwtService;
 import com.ninepaws.backend.security.TokenPayload;
@@ -49,6 +54,55 @@ public class AuthServiceImpl implements AuthService {
   private final OtpService otpService;
   private final EmailService emailService;
   private final TokenRevocationService tokenRevocationService;
+  private final GoogleTokenVerifier googleTokenVerifier;
+
+  @Override
+  @Transactional
+  public AuthResponse loginWithGoogle(GoogleLoginRequest request) {
+    GoogleTokenPayload payload = googleTokenVerifier.verify(request.idToken());
+
+    // 1. Check if user already exists by immutable Google sub
+    Optional<User> userByOauthId = userRepository.findByOauthId(payload.sub());
+    if (userByOauthId.isPresent()) {
+      User user = userByOauthId.get();
+      log.info("Google login successful for existing user by oauth_id: {}", user.getEmail());
+      return generateAuthResponse(user);
+    }
+
+    // 2. Check if user exists by email
+    Optional<User> userByEmail = userRepository.findByEmail(payload.email());
+    if (userByEmail.isPresent()) {
+      User existingUser = userByEmail.get();
+      if (existingUser.getOauthId() == null) {
+        log.warn(
+            "Account takeover prevented: email {} registered with LOCAL credentials without oauth_id",
+            payload.email());
+        throw new BaseAppException(AuthErrorCode.AUTH_ACCOUNT_LINKING_REQUIRED);
+      }
+    }
+
+    // 3. New user registration via Google
+    User newUser =
+        User.builder()
+            .fullName(payload.name() != null ? payload.name() : "Google User")
+            .email(payload.email())
+            .authProvider(AuthProvider.GOOGLE)
+            .oauthId(payload.sub())
+            .avatarUrl(payload.picture())
+            .emailVerified(true)
+            .biometricEnabled(false)
+            .dailyReminderEnabled(true)
+            .currency("VND")
+            .language("vi")
+            .build();
+
+    User savedUser = userRepository.save(newUser);
+    log.info(
+        "Registered new user via Google OAuth: id={}, email={}",
+        savedUser.getId(),
+        savedUser.getEmail());
+    return generateAuthResponse(savedUser);
+  }
 
   @Override
   @Transactional

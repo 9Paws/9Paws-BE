@@ -40,6 +40,9 @@ public class User extends BaseAuditEntity {
   @Builder.Default
   private AuthProvider authProvider = AuthProvider.LOCAL;
 
+  @Column(name = "oauth_id", length = 100, unique = true)
+  private String oauthId;
+
   @Column(name = "avatar_url", columnDefinition = "TEXT")
   private String avatarUrl;
 

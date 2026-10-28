@@ -48,6 +48,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.ninepaws.backend.security.oauth.GoogleTokenVerifier;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -57,6 +58,7 @@ class AuthServiceTest {
   @Mock private JwtService jwtService;
   @Mock private OtpService otpService;
   @Mock private EmailService emailService;
+  @Mock private GoogleTokenVerifier googleTokenVerifier;
   @Mock private TokenRevocationService tokenRevocationService;
 
   @InjectMocks private AuthServiceImpl authService;

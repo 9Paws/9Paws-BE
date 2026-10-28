@@ -71,6 +71,9 @@ spring:
         api-key: ${SPRING_AI_GOOGLE_GENAI_API_KEY:dummy-api-key}
 
 app:
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
   jwt:
     secret: ${JWT_SECRET:TmluZVBhd3NTdXBlclNlY3JldFNpZ25pbmdLZXlGb3JKd3RUb2tlbnNITUFDU0hBMjU2QXRMZWFzdDI1NkJpdHNMb25nMjAyNiE=}
     access-token-expiration: ${JWT_ACCESS_EXPIRATION:1800000}

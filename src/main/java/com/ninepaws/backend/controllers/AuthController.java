@@ -10,6 +10,7 @@ import com.ninepaws.backend.dtos.auth.ResendOtpRequest;
 import com.ninepaws.backend.dtos.auth.ResetPasswordRequest;
 import com.ninepaws.backend.dtos.auth.VerifyOtpRequest;
 import com.ninepaws.backend.dtos.auth.VerifyResetPasswordOtpResponse;
+import com.ninepaws.backend.dtos.auth.GoogleLoginRequest;
 import com.ninepaws.backend.dtos.response.base.SingleResponse;
 import com.ninepaws.backend.dtos.response.base.SuccessResponse;
 import com.ninepaws.backend.security.SecurityUtils;
@@ -56,6 +57,13 @@ public class AuthController extends AbstractBaseController {
       @Valid @RequestBody LoginRequest request) {
     AuthResponse response = authService.login(request);
     return success(response, "Login successful");
+  }
+
+  @PostMapping("/google")
+  public ResponseEntity<SingleResponse<AuthResponse>> loginWithGoogle(
+      @Valid @RequestBody GoogleLoginRequest request) {
+    AuthResponse response = authService.loginWithGoogle(request);
+    return success(response, "Đăng nhập Google thành công");
   }
 
   @PostMapping("/refresh-token")
