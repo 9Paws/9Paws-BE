@@ -10,9 +10,12 @@ import com.ninepaws.backend.dtos.auth.ResendOtpRequest;
 import com.ninepaws.backend.dtos.auth.ResetPasswordRequest;
 import com.ninepaws.backend.dtos.auth.VerifyOtpRequest;
 import com.ninepaws.backend.dtos.auth.VerifyResetPasswordOtpResponse;
+import com.ninepaws.backend.dtos.auth.GoogleLoginRequest;
 import java.util.UUID;
 
 public interface AuthService {
+
+  AuthResponse loginWithGoogle(GoogleLoginRequest request);
 
   void register(RegisterRequest request);
 
