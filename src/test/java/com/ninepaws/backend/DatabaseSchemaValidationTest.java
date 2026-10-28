@@ -95,4 +95,23 @@ class DatabaseSchemaValidationTest {
         walletRepository.findByIdAndUserIdForUpdate(savedWallet.getId(), savedUser.getId());
     assertThat(lockedWallet).isPresent();
   }
+
+  @Test
+  @DisplayName("V3 Migration: User has oauth_id column and can query by oauthId")
+  void shouldPersistAndQueryUserByOauthId() {
+    User user =
+        User.builder()
+            .fullName("Google Test User")
+            .email("google.test@ninepaws.com")
+            .authProvider(AuthProvider.GOOGLE)
+            .oauthId("google-sub-123456789")
+            .emailVerified(true)
+            .build();
+
+    userRepository.saveAndFlush(user);
+
+    assertThat(userRepository.findByOauthId("google-sub-123456789")).isPresent();
+    assertThat(userRepository.existsByOauthId("google-sub-123456789")).isTrue();
+    assertThat(userRepository.findByOauthId("non-existent-sub")).isEmpty();
+  }
 }
