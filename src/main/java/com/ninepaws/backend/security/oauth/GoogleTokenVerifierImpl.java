@@ -27,9 +27,7 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
   @Autowired
   public GoogleTokenVerifierImpl(
-      @Value(
-              "${spring.security.oauth2.client.registration.google.client-id:${GOOGLE_CLIENT_ID:}}")
-          String googleClientId) {
+      @Value("${app.oauth.google.client-id:${GOOGLE_CLIENT_ID:}}") String googleClientId) {
     try {
       GoogleIdTokenVerifier.Builder builder =
           new GoogleIdTokenVerifier.Builder(
